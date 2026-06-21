@@ -4,7 +4,11 @@ exports.getSettings = async (req, res) => {
   try {
     let settings = await Settings.findOne();
     if (!settings) {
-      settings = await Settings.create({});
+      settings = await Settings.create({
+        lowStockThreshold: 20,
+        expiryWarningDays: 60,
+        emailAlertIntervalHours: 24
+      });
     }
     res.json({ success: true, settings });
   } catch (error) {

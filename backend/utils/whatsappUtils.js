@@ -1,4 +1,6 @@
-const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
+const { Client, RemoteAuth, MessageMedia } = require('whatsapp-web.js');
+const { MongoStore } = require('wwebjs-mongo');
+const mongoose = require('mongoose');
 const qrcode = require('qrcode-terminal');
 const path = require('path');
 const fs = require('fs');
@@ -104,11 +106,15 @@ const initWhatsApp = () => {
   }
 
   // Clear any stale browser locks (very common on nodemon restarts)
-  const sessionDir = path.join(__dirname, '../.wwebjs_auth/session-medicare-pharmacy-session');
-  const lockFiles = [
-    path.join(sessionDir, 'lockfile'),
-    path.join(sessionDir, 'SingletonLock')
+  const sessionDirs = [
+    path.join(__dirname, '../.wwebjs_auth/session-medicare-pharmacy-session'),
+    path.join(__dirname, '../.wwebjs_auth/RemoteAuth-medicare-pharmacy-session')
   ];
+  const lockFiles = [];
+  sessionDirs.forEach(dir => {
+    lockFiles.push(path.join(dir, 'lockfile'));
+    lockFiles.push(path.join(dir, 'SingletonLock'));
+  });
 
   lockFiles.forEach(file => {
     try {
@@ -122,11 +128,15 @@ const initWhatsApp = () => {
   });
 
   try {
-    // Use LocalAuth to persist session so we scan QR code only once
+    const store = new MongoStore({ mongoose: mongoose });
+
+    console.log('📦 Using MongoDB RemoteAuth to persist WhatsApp session...');
     client = new Client({
-      authStrategy: new LocalAuth({
+      authStrategy: new RemoteAuth({
         clientId: 'medicare-pharmacy-session',
-        dataPath: path.join(__dirname, '../.wwebjs_auth')
+        dataPath: path.join(__dirname, '../.wwebjs_auth'),
+        store: store,
+        backupSyncIntervalMs: 60000
       }),
       puppeteer: {
         headless: true,
@@ -141,6 +151,10 @@ const initWhatsApp = () => {
           '--disable-gpu'
         ]
       }
+    });
+
+    client.on('remote_session_saved', () => {
+      console.log('💾 WhatsApp session successfully saved to MongoDB remote store!');
     });
 
     client.on('qr', (qr) => {

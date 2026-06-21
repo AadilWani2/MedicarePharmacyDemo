@@ -32,6 +32,7 @@
     "uuid": "^14.0.0",
     "validator": "^13.15.35",
     "whatsapp-web.js": "^1.34.7",
+    "wwebjs-mongo": "^1.1.0",
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {

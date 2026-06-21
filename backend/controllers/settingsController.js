@@ -8,6 +8,7 @@ exports.getSettings = async (req, res) => {
     }
     res.json({ success: true, settings });
   } catch (error) {
+    console.error('❌ Error in getSettings:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -33,6 +34,7 @@ exports.updateSettings = async (req, res) => {
       message: 'Settings updated successfully!' 
     });
   } catch (error) {
+    console.error('❌ Error in updateSettings:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -48,6 +50,7 @@ exports.disconnectWhatsApp = async (req, res) => {
     const success = await whatsappUtils.disconnectClient();
     res.json({ success, message: success ? 'WhatsApp client disconnected and logged out.' : 'Failed to disconnect.' });
   } catch (error) {
+    console.error('❌ Error in disconnectWhatsApp:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -57,6 +60,7 @@ exports.connectWhatsApp = async (req, res) => {
     const success = await whatsappUtils.connectClient();
     res.json({ success, message: success ? 'WhatsApp client initialization started.' : 'Client is already connecting or active.' });
   } catch (error) {
+    console.error('❌ Error in connectWhatsApp:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

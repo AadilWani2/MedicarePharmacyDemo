@@ -56,10 +56,15 @@ const Dashboard = () => {
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        console.log('[WhatsApp SSE] Status update:', data.status);
         setWhatsappStatus(data);
         
         // Auto-show modal if status is 'qr' and not dismissed in this session
         if (data.status === 'qr' && data.qr && !sessionStorage.getItem('whatsapp_qr_dismissed')) {
+          setShowQRModal(true);
+        }
+        // Auto-show modal when authenticated (user scanned the QR, show them progress)
+        if (data.status === 'authenticated') {
           setShowQRModal(true);
         }
       } catch (e) {

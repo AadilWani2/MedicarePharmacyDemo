@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Bell, AlertTriangle, Clock, Package, X, RefreshCw } from 'lucide-react';
-import { medicineService } from '../../services/api';
+import { medicineService, API_BASE_URL } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const NotificationBell = () => {
@@ -21,7 +21,7 @@ const NotificationBell = () => {
     let eventSource = null;
 
     if (token) {
-      const url = `http://localhost:5000/api/reports/notifications/stream?token=${token}`;
+      const url = `${API_BASE_URL}/reports/notifications/stream?token=${token}`;
       eventSource = new EventSource(url);
 
       eventSource.onmessage = (event) => {

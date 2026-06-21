@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { settingsService } from '../services/api';
+import { settingsService, API_BASE_URL } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Shield, Save, AlertTriangle, Calendar, Mail, RefreshCw, MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
-
+ 
 const Settings = () => {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
@@ -16,16 +16,16 @@ const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [whatsappStatus, setWhatsappStatus] = useState({ status: 'disconnected', qr: null });
   const [wsConnecting, setWsConnecting] = useState(false);
-
+ 
   useEffect(() => {
     fetchSettings();
   }, []);
-
+ 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
-
-    const url = `http://localhost:5000/api/settings/whatsapp/status?token=${token}`;
+ 
+    const url = `${API_BASE_URL}/settings/whatsapp/status?token=${token}`;
     const eventSource = new EventSource(url);
 
     eventSource.onmessage = (event) => {

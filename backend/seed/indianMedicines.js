@@ -1,0 +1,136 @@
+const indianMedicines = [
+  // ==================== PAIN RELIEF / ANALGESICS ====================
+  { name: "Paracetamol 500mg", genericName: "Acetaminophen", category: "Tablets", manufacturer: "Cipla Ltd", dosage: "1-2 tablets every 4-6 hours", requiresPrescription: false },
+  { name: "Paracetamol 650mg", genericName: "Acetaminophen", category: "Tablets", manufacturer: "GSK", dosage: "1 tablet as needed", requiresPrescription: false },
+  { name: "Crocin Advance 500mg", genericName: "Paracetamol", category: "Tablets", manufacturer: "GSK", dosage: "1-2 tablets every 4-6 hours", requiresPrescription: false },
+  { name: "Dolo 650", genericName: "Paracetamol", category: "Tablets", manufacturer: "Micro Labs", dosage: "1 tablet as needed", requiresPrescription: false },
+  { name: "Calpol 500mg", genericName: "Paracetamol", category: "Tablets", manufacturer: "GSK", dosage: "1-2 tablets every 4-6 hours", requiresPrescription: false },
+  { name: "Combiflam", genericName: "Ibuprofen + Paracetamol", category: "Tablets", manufacturer: "Sanofi", dosage: "1 tablet as needed", requiresPrescription: false },
+  { name: "Brufen 400mg", genericName: "Ibuprofen", category: "Tablets", manufacturer: "Abbott", dosage: "1 tablet every 6-8 hours", requiresPrescription: false },
+  { name: "Ibuprofen 400mg", genericName: "Ibuprofen", category: "Tablets", manufacturer: "Cipla Ltd", dosage: "1 tablet every 6-8 hours", requiresPrescription: false },
+  { name: "Diclofenac 50mg", genericName: "Diclofenac Sodium", category: "Tablets", manufacturer: "Sun Pharma", dosage: "1 tablet twice daily", requiresPrescription: true },
+  { name: "Voveran 50mg", genericName: "Diclofenac", category: "Tablets", manufacturer: "Novartis", dosage: "1 tablet twice daily", requiresPrescription: true },
+  { name: "Nimesulide 100mg", genericName: "Nimesulide", category: "Tablets", manufacturer: "Mankind Pharma", dosage: "1 tablet twice daily", requiresPrescription: true },
+  { name: "Nise 100mg", genericName: "Nimesulide", category: "Tablets", manufacturer: "Dr. Reddy's", dosage: "1 tablet twice daily", requiresPrescription: true },
+  { name: "Tramadol 50mg", genericName: "Tramadol", category: "Tablets", manufacturer: "Sun Pharma", dosage: "As prescribed", requiresPrescription: true },
+  { name: "Ultracet", genericName: "Tramadol + Paracetamol", category: "Tablets", manufacturer: "Janssen", dosage: "As prescribed", requiresPrescription: true },
+
+  // ==================== ANTIBIOTICS ====================
+  { name: "Azithromycin 500mg", genericName: "Azithromycin", category: "Tablets", manufacturer: "Sun Pharma", dosage: "1 tablet daily for 3 days", requiresPrescription: true },
+  { name: "Azithral 500mg", genericName: "Azithromycin", category: "Tablets", manufacturer: "Alembic", dosage: "1 tablet daily for 3 days", requiresPrescription: true },
+  { name: "Amoxicillin 250mg", genericName: "Amoxicillin", category: "Capsules", manufacturer: "Mankind Pharma", dosage: "1 capsule 3 times daily", requiresPrescription: true },
+  { name: "Amoxicillin 500mg", genericName: "Amoxicillin", category: "Capsules", manufacturer: "Cipla Ltd", dosage: "1 capsule 3 times daily", requiresPrescription: true },
+  { name: "Mox 500mg", genericName: "Amoxicillin", category: "Capsules", manufacturer: "Sun Pharma", dosage: "1 capsule 3 times daily", requiresPrescription: true },
+  { name: "Augmentin 625mg", genericName: "Amoxicillin + Clavulanic Acid", category: "Tablets", manufacturer: "GSK", dosage: "1 tablet twice daily", requiresPrescription: true },
+  { name: "Ciprofloxacin 500mg", genericName: "Ciprofloxacin", category: "Tablets", manufacturer: "Cipla Ltd", dosage: "1 tablet twice daily", requiresPrescription: true },
+  { name: "Cifran 500mg", genericName: "Ciprofloxacin", category: "Tablets", manufacturer: "Sun Pharma", dosage: "1 tablet twice daily", requiresPrescription: true },
+  { name: "Doxycycline 100mg", genericName: "Doxycycline", category: "Capsules", manufacturer: "Dr. Reddy's", dosage: "1 capsule twice daily", requiresPrescription: true },
+  { name: "Levofloxacin 500mg", genericName: "Levofloxacin", category: "Tablets", manufacturer: "Cipla Ltd", dosage: "1 tablet daily", requiresPrescription: true },
+  { name: "Metronidazole 400mg", genericName: "Metronidazole", category: "Tablets", manufacturer: "Abbott", dosage: "1 tablet 3 times daily", requiresPrescription: true },
+  { name: "Flagyl 400mg", genericName: "Metronidazole", category: "Tablets", manufacturer: "Pfizer", dosage: "1 tablet 3 times daily", requiresPrescription: true },
+  { name: "Cefixime 200mg", genericName: "Cefixime", category: "Tablets", manufacturer: "Cipla Ltd", dosage: "1 tablet twice daily", requiresPrescription: true },
+  { name: "Ceftum 500mg", genericName: "Cefuroxime", category: "Tablets", manufacturer: "GSK", dosage: "1 tablet twice daily", requiresPrescription: true },
+
+  // ==================== ANTACIDS / DIGESTIVE ====================
+  { name: "Pantoprazole 40mg", genericName: "Pantoprazole", category: "Tablets", manufacturer: "Sun Pharma", dosage: "1 tablet before breakfast", requiresPrescription: true },
+  { name: "Pantocid 40mg", genericName: "Pantoprazole", category: "Tablets", manufacturer: "Sun Pharma", dosage: "1 tablet before breakfast", requiresPrescription: true },
+  { name: "Omeprazole 20mg", genericName: "Omeprazole", category: "Capsules", manufacturer: "Dr. Reddy's", dosage: "1 capsule before breakfast", requiresPrescription: true },
+  { name: "Omez 20mg", genericName: "Omeprazole", category: "Capsules", manufacturer: "Dr. Reddy's", dosage: "1 capsule before breakfast", requiresPrescription: true },
+  { name: "Rabeprazole 20mg", genericName: "Rabeprazole", category: "Tablets", manufacturer: "Cipla Ltd", dosage: "1 tablet before breakfast", requiresPrescription: true },
+  { name: "Razo 20mg", genericName: "Rabeprazole", category: "Tablets", manufacturer: "Dr. Reddy's", dosage: "1 tablet before breakfast", requiresPrescription: true },
+  { name: "Digene Tablet", genericName: "Aluminium Hydroxide + Magnesium Hydroxide", category: "Tablets", manufacturer: "Abbott", dosage: "1-2 tablets as needed", requiresPrescription: false },
+  { name: "Gelusil", genericName: "Aluminium Hydroxide + Magnesium Hydroxide", category: "Tablets", manufacturer: "Pfizer", dosage: "1-2 tablets as needed", requiresPrescription: false },
+  { name: "Eno Powder", genericName: "Sodium Bicarbonate + Citric Acid", category: "Powders", manufacturer: "GSK", dosage: "1 sachet in water", requiresPrescription: false },
+  { name: "Pudin Hara", genericName: "Herbal Digestive", category: "Syrups", manufacturer: "Dabur", dosage: "5-10ml as needed", requiresPrescription: false },
+
+  // ==================== ANTI-ALLERGIC ====================
+  { name: "Cetirizine 10mg", genericName: "Cetirizine", category: "Tablets", manufacturer: "Cipla Ltd", dosage: "1 tablet daily", requiresPrescription: false },
+  { name: "Cetrizine 10mg", genericName: "Cetirizine", category: "Tablets", manufacturer: "Mankind Pharma", dosage: "1 tablet daily", requiresPrescription: false },
+  { name: "Allegra 120mg", genericName: "Fexofenadine", category: "Tablets", manufacturer: "Sanofi", dosage: "1 tablet daily", requiresPrescription: false },
+  { name: "Levocetirizine 5mg", genericName: "Levocetirizine", category: "Tablets", manufacturer: "Sun Pharma", dosage: "1 tablet at bedtime", requiresPrescription: false },
+  { name: "Montair 10mg", genericName: "Montelukast", category: "Tablets", manufacturer: "Cipla Ltd", dosage: "1 tablet at bedtime", requiresPrescription: true },
+  { name: "Avil 25mg", genericName: "Pheniramine Maleate", category: "Tablets", manufacturer: "Sanofi", dosage: "1 tablet as needed", requiresPrescription: false },
+
+  // ==================== COUGH & COLD ====================
+  { name: "Benadryl Cough Syrup", genericName: "Diphenhydramine", category: "Syrups", manufacturer: "Johnson & Johnson", dosage: "2 teaspoons 3 times daily", requiresPrescription: false },
+  { name: "Cofsils Cough Syrup", genericName: "Dextromethorphan", category: "Syrups", manufacturer: "Cipla Ltd", dosage: "2 teaspoons 3 times daily", requiresPrescription: false },
+  { name: "Ascoril LS Syrup", genericName: "Levosalbutamol + Ambroxol", category: "Syrups", manufacturer: "Glenmark", dosage: "2 teaspoons twice daily", requiresPrescription: true },
+  { name: "Cheston Cold Tablets", genericName: "Paracetamol + Phenylephrine", category: "Tablets", manufacturer: "Cipla Ltd", dosage: "1 tablet as needed", requiresPrescription: false },
+  { name: "Sinarest Tablets", genericName: "Paracetamol + Phenylephrine", category: "Tablets", manufacturer: "Centaur", dosage: "1 tablet as needed", requiresPrescription: false },
+  { name: "Alex Syrup", genericName: "Dextromethorphan + Phenylephrine", category: "Syrups", manufacturer: "Glenmark", dosage: "2 teaspoons 3 times daily", requiresPrescription: false },
+  { name: "Honitus Syrup", genericName: "Herbal Cough Formula", category: "Syrups", manufacturer: "Dabur", dosage: "2 teaspoons 3 times daily", requiresPrescription: false },
+
+  // ==================== DIABETES ====================
+  { name: "Metformin 500mg", genericName: "Metformin", category: "Tablets", manufacturer: "Sun Pharma", dosage: "As prescribed", requiresPrescription: true },
+  { name: "Glycomet 500mg", genericName: "Metformin", category: "Tablets", manufacturer: "USV", dosage: "As prescribed", requiresPrescription: true },
+  { name: "Glibenclamide 5mg", genericName: "Glibenclamide", category: "Tablets", manufacturer: "Cipla Ltd", dosage: "As prescribed", requiresPrescription: true },
+  { name: "Glimepiride 2mg", genericName: "Glimepiride", category: "Tablets", manufacturer: "Sun Pharma", dosage: "As prescribed", requiresPrescription: true },
+  { name: "Human Mixtard Insulin", genericName: "Human Insulin", category: "Injections", manufacturer: "Novo Nordisk", dosage: "As prescribed", requiresPrescription: true, storageConditions: "Store at 2-8°C" },
+  { name: "Lantus Insulin", genericName: "Insulin Glargine", category: "Injections", manufacturer: "Sanofi", dosage: "As prescribed", requiresPrescription: true, storageConditions: "Store at 2-8°C" },
+
+  // ==================== CARDIAC / BLOOD PRESSURE ====================
+  { name: "Amlodipine 5mg", genericName: "Amlodipine", category: "Tablets", manufacturer: "Cipla Ltd", dosage: "1 tablet daily", requiresPrescription: true },
+  { name: "Amlong 5mg", genericName: "Amlodipine", category: "Tablets", manufacturer: "Micro Labs", dosage: "1 tablet daily", requiresPrescription: true },
+  { name: "Atenolol 50mg", genericName: "Atenolol", category: "Tablets", manufacturer: "Sun Pharma", dosage: "1 tablet daily", requiresPrescription: true },
+  { name: "Losartan 50mg", genericName: "Losartan", category: "Tablets", manufacturer: "Cipla Ltd", dosage: "1 tablet daily", requiresPrescription: true },
+  { name: "Atorvastatin 10mg", genericName: "Atorvastatin", category: "Tablets", manufacturer: "Pfizer", dosage: "1 tablet at bedtime", requiresPrescription: true },
+  { name: "Ecosprin 75mg", genericName: "Aspirin", category: "Tablets", manufacturer: "USV", dosage: "1 tablet daily", requiresPrescription: true },
+  { name: "Clopidogrel 75mg", genericName: "Clopidogrel", category: "Tablets", manufacturer: "Sun Pharma", dosage: "1 tablet daily", requiresPrescription: true },
+
+  // ==================== VITAMINS & SUPPLEMENTS ====================
+  { name: "Vitamin D3 60K", genericName: "Cholecalciferol", category: "Capsules", manufacturer: "Abbott", dosage: "1 capsule weekly", requiresPrescription: false },
+  { name: "Calcirol Sachet", genericName: "Vitamin D3", category: "Powders", manufacturer: "Cadila", dosage: "1 sachet weekly", requiresPrescription: false },
+  { name: "Becosules Capsule", genericName: "Vitamin B-Complex", category: "Capsules", manufacturer: "Pfizer", dosage: "1 capsule daily", requiresPrescription: false },
+  { name: "Neurobion Forte", genericName: "Vitamin B-Complex", category: "Tablets", manufacturer: "Merck", dosage: "1 tablet daily", requiresPrescription: false },
+  { name: "Zincovit Tablet", genericName: "Multivitamin + Zinc", category: "Tablets", manufacturer: "Apex", dosage: "1 tablet daily", requiresPrescription: false },
+  { name: "Supradyn Tablet", genericName: "Multivitamin", category: "Tablets", manufacturer: "Bayer", dosage: "1 tablet daily", requiresPrescription: false },
+  { name: "Revital H", genericName: "Multivitamin + Ginseng", category: "Capsules", manufacturer: "Ranbaxy", dosage: "1 capsule daily", requiresPrescription: false },
+  { name: "Evion 400mg", genericName: "Vitamin E", category: "Capsules", manufacturer: "Merck", dosage: "1 capsule daily", requiresPrescription: false },
+  { name: "Limcee Tablet", genericName: "Vitamin C", category: "Tablets", manufacturer: "Abbott", dosage: "1-2 tablets daily", requiresPrescription: false },
+  { name: "Celol Capsule", genericName: "Vitamin C", category: "Capsules", manufacturer: "Mankind", dosage: "1 capsule daily", requiresPrescription: false },
+  { name: "Ferium XT Tablet", genericName: "Iron + Folic Acid", category: "Tablets", manufacturer: "Emcure", dosage: "1 tablet daily", requiresPrescription: false },
+  { name: "Orofer XT Tablet", genericName: "Iron + Folic Acid", category: "Tablets", manufacturer: "Emcure", dosage: "1 tablet daily", requiresPrescription: false },
+  { name: "Shelcal 500mg", genericName: "Calcium + Vitamin D3", category: "Tablets", manufacturer: "Torrent", dosage: "1 tablet daily", requiresPrescription: false },
+
+  // ==================== ANTI-EMETICS (Vomiting) ====================
+  { name: "Domperidone 10mg", genericName: "Domperidone", category: "Tablets", manufacturer: "Cipla Ltd", dosage: "1 tablet before meals", requiresPrescription: true },
+  { name: "Ondansetron 4mg", genericName: "Ondansetron", category: "Tablets", manufacturer: "Sun Pharma", dosage: "1 tablet as needed", requiresPrescription: true },
+  { name: "Emeset 4mg", genericName: "Ondansetron", category: "Tablets", manufacturer: "Cipla Ltd", dosage: "1 tablet as needed", requiresPrescription: true },
+
+  // ==================== ANTI-DIARRHEAL ====================
+  { name: "Loperamide 2mg", genericName: "Loperamide", category: "Tablets", manufacturer: "Cipla Ltd", dosage: "2 tablets initially, then 1 after each loose stool", requiresPrescription: false },
+  { name: "ORS Powder", genericName: "Oral Rehydration Salts", category: "Powders", manufacturer: "FDC Ltd", dosage: "Dissolve in 1L water", requiresPrescription: false },
+  { name: "Electral Powder", genericName: "Oral Rehydration Salts", category: "Powders", manufacturer: "FDC Ltd", dosage: "Dissolve in 1L water", requiresPrescription: false },
+  { name: "Enterogermina", genericName: "Bacillus Clausii", category: "Syrups", manufacturer: "Sanofi", dosage: "1 vial twice daily", requiresPrescription: false },
+
+  // ==================== ANTI-FUNGAL ====================
+  { name: "Fluconazole 150mg", genericName: "Fluconazole", category: "Tablets", manufacturer: "Cipla Ltd", dosage: "1 tablet single dose", requiresPrescription: true },
+  { name: "Candid-B Cream", genericName: "Clotrimazole + Beclomethasone", category: "Ointments", manufacturer: "Glenmark", dosage: "Apply as directed", requiresPrescription: true },
+  { name: "Itraconazole 100mg", genericName: "Itraconazole", category: "Capsules", manufacturer: "Sun Pharma", dosage: "As prescribed", requiresPrescription: true },
+
+  // ==================== OINTMENTS / TOPICAL ====================
+  { name: "Betnovate Cream", genericName: "Betamethasone", category: "Ointments", manufacturer: "GSK", dosage: "Apply thin layer", requiresPrescription: true },
+  { name: "Quadriderm Cream", genericName: "Betamethasone + Gentamicin", category: "Ointments", manufacturer: "Fulford", dosage: "Apply thin layer", requiresPrescription: true },
+  { name: "Mupirocin Ointment", genericName: "Mupirocin", category: "Ointments", manufacturer: "Glenmark", dosage: "Apply 3 times daily", requiresPrescription: true },
+  { name: "Volini Gel", genericName: "Diclofenac Gel", category: "Ointments", manufacturer: "Sun Pharma", dosage: "Apply as needed", requiresPrescription: false },
+  { name: "Moov Ointment", genericName: "Diclofenac + Methyl Salicylate", category: "Ointments", manufacturer: "Reckitt", dosage: "Apply as needed", requiresPrescription: false },
+  { name: "Burnol Cream", genericName: "Silver Sulfadiazine", category: "Ointments", manufacturer: "Cipla Ltd", dosage: "Apply on burns", requiresPrescription: false },
+
+  // ==================== EYE / EAR DROPS ====================
+  { name: "Ciplox Eye Drops", genericName: "Ciprofloxacin", category: "Drops", manufacturer: "Cipla Ltd", dosage: "1-2 drops 4 times daily", requiresPrescription: true },
+  { name: "Refresh Tears", genericName: "Carboxymethylcellulose", category: "Drops", manufacturer: "Allergan", dosage: "1-2 drops as needed", requiresPrescription: false },
+  { name: "Otrivin Nasal Drops", genericName: "Xylometazoline", category: "Drops", manufacturer: "Novartis", dosage: "2-3 drops as needed", requiresPrescription: false },
+  { name: "Candibiotic Ear Drops", genericName: "Clotrimazole + Beclomethasone", category: "Drops", manufacturer: "Glenmark", dosage: "2-3 drops 3 times daily", requiresPrescription: true },
+
+  // ==================== OTHERS ====================
+  { name: "Dolo 250mg Suspension", genericName: "Paracetamol", category: "Syrups", manufacturer: "Micro Labs", dosage: "As per weight", requiresPrescription: false },
+  { name: "Crocin Suspension", genericName: "Paracetamol", category: "Syrups", manufacturer: "GSK", dosage: "As per weight", requiresPrescription: false },
+  { name: "Meftal Spas", genericName: "Mefenamic Acid + Dicyclomine", category: "Tablets", manufacturer: "Blue Cross", dosage: "1 tablet as needed", requiresPrescription: true },
+  { name: "Cyclopam Tablet", genericName: "Dicyclomine + Paracetamol", category: "Tablets", manufacturer: "Indoco", dosage: "1 tablet as needed", requiresPrescription: false },
+  { name: "Dexona Tablet", genericName: "Dexamethasone", category: "Tablets", manufacturer: "Zydus", dosage: "As prescribed", requiresPrescription: true },
+  { name: "Wysolone 10mg", genericName: "Prednisolone", category: "Tablets", manufacturer: "Pfizer", dosage: "As prescribed", requiresPrescription: true },
+  { name: "Thyronorm 50mcg", genericName: "Thyroxine Sodium", category: "Tablets", manufacturer: "Abbott", dosage: "1 tablet on empty stomach", requiresPrescription: true },
+  { name: "Eltroxin 50mcg", genericName: "Thyroxine Sodium", category: "Tablets", manufacturer: "GSK", dosage: "1 tablet on empty stomach", requiresPrescription: true },
+];
+
+module.exports = indianMedicines;

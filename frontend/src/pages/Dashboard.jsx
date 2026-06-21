@@ -151,14 +151,20 @@ const Dashboard = () => {
         </div>
       )}
 
-      {user?.role === 'admin' && whatsappStatus.status === 'connecting' && (
+      {user?.role === 'admin' && (whatsappStatus.status === 'connecting' || whatsappStatus.status === 'authenticated') && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3 shadow-sm animate-fadeIn">
           <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
             <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
           </div>
           <div>
-            <p className="text-sm font-bold text-blue-800">Connecting WhatsApp Client...</p>
-            <p className="text-xs text-blue-600 font-medium">The server is booting up Puppeteer to host your alerts session. Please wait.</p>
+            <p className="text-sm font-bold text-blue-800">
+              {whatsappStatus.status === 'authenticated' ? 'WhatsApp Authenticated — Finalizing...' : 'Connecting WhatsApp Client...'}
+            </p>
+            <p className="text-xs text-blue-600 font-medium">
+              {whatsappStatus.status === 'authenticated' 
+                ? 'QR code was scanned successfully. The session is being saved — this may take up to a minute.' 
+                : 'The server is booting up Puppeteer to host your alerts session. Please wait.'}
+            </p>
           </div>
         </div>
       )}
@@ -365,7 +371,7 @@ const Dashboard = () => {
       </div>
 
       {/* WhatsApp QR Modal Overlay */}
-      {showQRModal && (whatsappStatus.status === 'qr' || whatsappStatus.status === 'ready') && (
+      {showQRModal && (whatsappStatus.status === 'qr' || whatsappStatus.status === 'authenticated' || whatsappStatus.status === 'ready') && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-sm w-full p-6 relative space-y-5">
             {whatsappStatus.status === 'qr' && (
@@ -390,6 +396,16 @@ const Dashboard = () => {
                 <h3 className="text-xl font-bold text-green-800">Connected Successfully!</h3>
                 <p className="text-xs text-green-600 max-w-xs mx-auto leading-relaxed font-medium">
                   Your WhatsApp has been successfully linked. System alerts are now streaming.
+                </p>
+              </div>
+            ) : whatsappStatus.status === 'authenticated' ? (
+              <div className="text-center py-6 space-y-4">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+                  <div className="animate-spin rounded-full h-8 w-8 border-[3px] border-blue-600 border-t-transparent"></div>
+                </div>
+                <h3 className="text-xl font-bold text-blue-800">Authenticated!</h3>
+                <p className="text-xs text-blue-600 max-w-xs mx-auto leading-relaxed font-medium">
+                  QR scanned successfully. Setting up your WhatsApp session... This may take up to a minute.
                 </p>
               </div>
             ) : (

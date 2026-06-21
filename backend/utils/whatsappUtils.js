@@ -167,6 +167,13 @@ const initWhatsApp = () => {
       broadcastWhatsAppStatus();
     });
 
+    client.on('authenticated', () => {
+      console.log('\n🔐 WhatsApp QR scanned & authenticated! Waiting for client to be ready...');
+      connectionStatus = 'authenticated';
+      qrText = null;
+      broadcastWhatsAppStatus();
+    });
+
     client.on('ready', () => {
       console.log('\n✅ WhatsApp client is ready and connected!');
       isReady = true;

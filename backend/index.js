@@ -14,6 +14,9 @@ dotenv.config();
 
 const app = express();
 
+// Trust proxy for Render/Vercel reverse proxies (required by express-rate-limit)
+app.set('trust proxy', 1);
+
 // Security
 app.use(helmet());
 app.use(cors({

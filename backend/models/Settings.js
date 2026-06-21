@@ -26,9 +26,8 @@ const settingsSchema = new mongoose.Schema({
 });
 
 // Update the timestamp before saving
-settingsSchema.pre('save', function(next) {
+settingsSchema.pre('save', function() {
   this.updatedAt = Date.now();
-  next();
 });
 
 module.exports = mongoose.model('Settings', settingsSchema);

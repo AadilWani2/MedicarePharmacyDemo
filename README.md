@@ -10,6 +10,9 @@ A premium, modern web application for pharmacy inventory valuation, retail sales
 * **📈 Reports & Ledgers:** Standard-compliant ledger views for inventory valuation, sales records, low-stock reorder thresholds, and upcoming expiration warnings.
 * **📥 Multi-Format Exports:** Export any data table (Medicines list, Reports valuation, and Sales ledgers) to standard `.csv` files with a single click.
 * **✉️ Automated Gmail Alerts:** Scheduled daily email alerts sent directly to your Gmail containing HTML summaries and detailed CSV attachments of low-stock and expiring medicines. Also features an instant "Send Email Alert" trigger button on the UI for admins.
+* **🟢 Live WhatsApp Control Panel:** Monitor connection status (`Disconnected`, `Connecting`, `Scan QR`, `Connected`) and toggle backend client states directly from the Admin Settings dashboard. Displays pair QR codes on-screen.
+* **🔔 Real-time alerts:** SSE-powered notification bell in the header that displays warning popups (`react-hot-toast`) and badge count increments instantly when sales checkout drops stock levels below safety reorder limits.
+* **📅 Expiry Timeline & Returns Ledger:** Visual expiration buckets (Critical <30d, Warning <60d, Watchlist <90d) with admin-controlled one-click 20% clearance discounts. Automatically groups expiring stock and generates downloadable PDF credit return memos for suppliers.
 * **🛡️ Role-Based Access Controls:** Secure authentication with granular role routing (`admin`, `pharmacist`, `staff`). Restricts critical operations (e.g. deleting transactions, editing staff, or dispatching alerts) to Administrators.
 * **🔍 Auto-complete Suggestions:** Real-time data auto-completion in the Add Medicine form using a preloaded suggestions dataset of 134 common Indian medicines, auto-filling category, generic name, dosage, and manufacturer fields.
 * **🎨 Glassmorphic Premium UI:** Gorgeous dark mode login panels, glowing mesh gradients, custom toggle switches, and responsive design systems.
@@ -18,8 +21,8 @@ A premium, modern web application for pharmacy inventory valuation, retail sales
 
 ## 🛠️ Tech Stack
 
-* **Frontend:** React 19, Vite, Tailwind CSS v4, Lucide Icons, Axios, React Hot Toast.
-* **Backend:** Node.js, Express, MongoDB (Mongoose), JWT, Nodemailer, Nodemon, Helmet, Express Rate Limit.
+* **Frontend:** React 19, Vite, Tailwind CSS v4, Lucide Icons, Axios, React Hot Toast, Recharts.
+* **Backend:** Node.js, Express, MongoDB (Mongoose), JWT, Nodemailer, whatsapp-web.js, Nodemon, Helmet, Express Rate Limit.
 
 ---
 
@@ -47,6 +50,10 @@ SMTP_PORT=587
 SMTP_USER=your-sending-email@gmail.com
 SMTP_PASS=your-16-character-app-password
 ALERT_RECIPIENT=your-receiving-email@gmail.com
+
+# 📱 WhatsApp Alert Settings
+WHATSAPP_ALERTS_ENABLED=true
+WHATSAPP_RECIPIENT=91XXXXXXXXXX
 ```
 
 > [!IMPORTANT]

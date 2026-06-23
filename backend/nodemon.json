@@ -1,0 +1,9 @@
+{
+  "ignore": [
+    "tests/*",
+    ".wwebjs_auth/*",
+    ".wwebjs_cache/*",
+    "*.test.js",
+    "jest.config.js"
+  ]
+}

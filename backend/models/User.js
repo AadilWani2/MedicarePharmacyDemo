@@ -71,7 +71,6 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
   this.loginAttempts = 0;
   this.lockUntil = undefined;
   this.lastLogin = new Date();
-  await this.save({ validateBeforeSave: false });
   return true;
 };
 

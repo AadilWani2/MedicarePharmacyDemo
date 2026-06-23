@@ -29,7 +29,7 @@ exports.getStats = async (req, res) => {
       }),
       Supplier.countDocuments({ status: 'active' }),
       Sale.aggregate([
-        { $match: { saleDate: { $gte: new Date().setHours(0, 0, 0, 0) } } },
+        { $match: { saleDate: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) } } },
         { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 } } }
       ]),
       Sale.aggregate([
@@ -67,10 +67,12 @@ exports.getAnalytics = async (req, res) => {
     thirtyDaysAgo.setHours(0, 0, 0, 0);
 
     // Fetch sales data
-    const [sales7Days, sales30Days] = await Promise.all([
-      Sale.find({ saleDate: { $gte: sevenDaysAgo } }).populate('items.medicine'),
-      Sale.find({ saleDate: { $gte: thirtyDaysAgo } }).populate('items.medicine')
-    ]);
+    // Fetch sales data for 30 days once, populating only purchasePrice and category
+    const sales30Days = await Sale.find({ saleDate: { $gte: thirtyDaysAgo } })
+      .populate('items.medicine', 'purchasePrice category');
+
+    // Filter 7 days sales in-memory to save query time and resources
+    const sales7Days = sales30Days.filter(sale => new Date(sale.saleDate) >= sevenDaysAgo);
 
     // 1. Sales Trend (Last 7 Days)
     const salesTrendMap = {};

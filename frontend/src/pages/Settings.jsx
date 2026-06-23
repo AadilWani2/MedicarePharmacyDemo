@@ -32,6 +32,8 @@ const Settings = () => {
     let eventSource = null;
     let pollInterval = null;
     let isPolling = false;
+    let sseTimeout = null;
+    let receivedMessage = false;
 
     const startPolling = () => {
       if (isPolling) return;
@@ -59,7 +61,24 @@ const Settings = () => {
       const url = `${API_BASE_URL}/settings/whatsapp/status?token=${token}`;
       eventSource = new EventSource(url);
 
+      // Set a 3-second timeout to check if SSE is working/unbuffered
+      sseTimeout = setTimeout(() => {
+        if (!receivedMessage) {
+          console.warn('[WhatsApp SSE] No initial message received within 3s (likely buffered/blocked by proxy). Falling back to HTTP polling.');
+          if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+          }
+          startPolling();
+        }
+      }, 3000);
+
       eventSource.onmessage = (event) => {
+        receivedMessage = true;
+        if (sseTimeout) {
+          clearTimeout(sseTimeout);
+          sseTimeout = null;
+        }
         try {
           const data = JSON.parse(event.data);
           setWhatsappStatus(data);
@@ -87,6 +106,9 @@ const Settings = () => {
       }
       if (pollInterval) {
         clearInterval(pollInterval);
+      }
+      if (sseTimeout) {
+        clearTimeout(sseTimeout);
       }
     };
   }, []);
@@ -421,6 +443,7 @@ const Settings = () => {
             <div className="flex items-center gap-3">
               <span className={`h-3 w-3 rounded-full ${
                 whatsappStatus.status === 'ready' ? 'bg-green-500 animate-pulse' :
+                whatsappStatus.status === 'authenticated' ? 'bg-indigo-500 animate-pulse' :
                 whatsappStatus.status === 'qr' ? 'bg-yellow-500 animate-pulse' :
                 whatsappStatus.status === 'connecting' ? 'bg-blue-500 animate-pulse' :
                 'bg-red-500'
@@ -428,6 +451,7 @@ const Settings = () => {
               <span className="text-sm font-bold text-gray-700 capitalize">
                 Status: {
                   whatsappStatus.status === 'ready' ? 'Connected & Ready' :
+                  whatsappStatus.status === 'authenticated' ? 'Authenticated (Finalizing...)' :
                   whatsappStatus.status === 'qr' ? 'Action Required: Scan QR Code' :
                   whatsappStatus.status === 'connecting' ? 'Initializing Client...' :
                   'Disconnected'
@@ -481,6 +505,12 @@ const Settings = () => {
                 </div>
                 <p className="text-sm font-bold">Successfully Connected!</p>
                 <p className="text-[10px] text-green-600 max-w-[160px] mx-auto leading-relaxed">System alerts are streaming to your device.</p>
+              </div>
+            ) : whatsappStatus.status === 'authenticated' ? (
+              <div className="space-y-2 text-center text-indigo-700">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-650 border-t-transparent mx-auto mb-2"></div>
+                <p className="text-sm font-semibold">Authenticated!</p>
+                <p className="text-[10px] text-indigo-600 max-w-[160px] mx-auto leading-relaxed">Setting up your WhatsApp session... This may take up to a minute.</p>
               </div>
             ) : whatsappStatus.status === 'connecting' ? (
               <div className="space-y-2 text-center text-blue-700">

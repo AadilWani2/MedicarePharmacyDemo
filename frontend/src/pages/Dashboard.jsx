@@ -53,6 +53,8 @@ const Dashboard = () => {
     let eventSource = null;
     let pollInterval = null;
     let isPolling = false;
+    let sseTimeout = null;
+    let receivedMessage = false;
 
     const startPolling = () => {
       if (isPolling) return;
@@ -89,7 +91,24 @@ const Dashboard = () => {
       const url = `${API_BASE_URL}/settings/whatsapp/status?token=${token}`;
       eventSource = new EventSource(url);
 
+      // Set a 3-second timeout to check if SSE is working/unbuffered
+      sseTimeout = setTimeout(() => {
+        if (!receivedMessage) {
+          console.warn('[WhatsApp SSE] No initial message received within 3s (likely buffered/blocked by proxy). Falling back to HTTP polling.');
+          if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+          }
+          startPolling();
+        }
+      }, 3000);
+
       eventSource.onmessage = (event) => {
+        receivedMessage = true;
+        if (sseTimeout) {
+          clearTimeout(sseTimeout);
+          sseTimeout = null;
+        }
         try {
           const data = JSON.parse(event.data);
           console.log('[WhatsApp SSE] Status update:', data.status);
@@ -127,6 +146,9 @@ const Dashboard = () => {
       }
       if (pollInterval) {
         clearInterval(pollInterval);
+      }
+      if (sseTimeout) {
+        clearTimeout(sseTimeout);
       }
     };
   }, [user]);

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { settingsService, API_BASE_URL } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Shield, Save, AlertTriangle, Calendar, Mail, RefreshCw, MessageSquare } from 'lucide-react';
+import { Shield, Save, AlertTriangle, Calendar, Mail, RefreshCw, MessageSquare, IndianRupee } from 'lucide-react';
 import toast from 'react-hot-toast';
  
 const Settings = () => {
@@ -10,7 +10,11 @@ const Settings = () => {
   const [formData, setFormData] = useState({
     lowStockThreshold: 20,
     expiryWarningDays: 60,
-    emailAlertIntervalHours: 24
+    emailAlertIntervalHours: 24,
+    pharmacyGSTIN: '01ABCDE1234F1Z5',
+    pharmacyState: '01',
+    pharmacyStateName: 'Jammu & Kashmir',
+    defaultGSTRate: 12
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -54,7 +58,11 @@ const Settings = () => {
         setFormData({
           lowStockThreshold: data.settings.lowStockThreshold,
           expiryWarningDays: data.settings.expiryWarningDays,
-          emailAlertIntervalHours: data.settings.emailAlertIntervalHours
+          emailAlertIntervalHours: data.settings.emailAlertIntervalHours,
+          pharmacyGSTIN: data.settings.pharmacyGSTIN || '01ABCDE1234F1Z5',
+          pharmacyState: data.settings.pharmacyState || '01',
+          pharmacyStateName: data.settings.pharmacyStateName || 'Jammu & Kashmir',
+          defaultGSTRate: data.settings.defaultGSTRate ?? 12
         });
       }
     } catch (error) {
@@ -65,10 +73,10 @@ const Settings = () => {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
     setFormData({
       ...formData,
-      [name]: Number(value)
+      [name]: type === 'number' ? Number(value) : value
     });
   };
 
@@ -246,6 +254,113 @@ const Settings = () => {
                 <>
                   <Save className="h-4.5 w-4.5" />
                   <span>Save Configurations</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* GST Configuration */}
+      {!loading && (
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-150 p-6 space-y-6">
+          <h3 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-3 flex items-center gap-2">
+            <IndianRupee className="h-5 w-5 text-green-600" />
+            GST Configuration
+          </h3>
+
+          <div className="space-y-6">
+            {/* Pharmacy GSTIN */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+              <div>
+                <label className="text-sm font-bold text-gray-700">Pharmacy GSTIN</label>
+                <span className="text-xs text-gray-400 block mt-0.5">
+                  Your 15-digit GST Identification Number.
+                </span>
+              </div>
+              <div className="md:col-span-2 max-w-xs">
+                <input
+                  type="text"
+                  name="pharmacyGSTIN"
+                  value={formData.pharmacyGSTIN}
+                  onChange={handleChange}
+                  placeholder="e.g. 01ABCDE1234F1Z5"
+                  maxLength={15}
+                  className="w-full rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm py-2.5 px-4 outline-none font-mono font-semibold tracking-wider uppercase"
+                />
+              </div>
+            </div>
+
+            {/* Pharmacy State */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+              <div>
+                <label className="text-sm font-bold text-gray-700">State / UT</label>
+                <span className="text-xs text-gray-400 block mt-0.5">
+                  Your pharmacy state for CGST/SGST vs IGST calculation.
+                </span>
+              </div>
+              <div className="md:col-span-2 flex gap-3 max-w-xs">
+                <input
+                  type="text"
+                  name="pharmacyState"
+                  value={formData.pharmacyState}
+                  onChange={handleChange}
+                  placeholder="01"
+                  maxLength={2}
+                  className="w-16 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm py-2.5 px-3 outline-none font-mono font-semibold text-center"
+                />
+                <input
+                  type="text"
+                  name="pharmacyStateName"
+                  value={formData.pharmacyStateName}
+                  onChange={handleChange}
+                  placeholder="Jammu & Kashmir"
+                  className="flex-1 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm py-2.5 px-4 outline-none font-semibold"
+                />
+              </div>
+            </div>
+
+            {/* Default GST Rate */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+              <div>
+                <label className="text-sm font-bold text-gray-700">Default GST Rate</label>
+                <span className="text-xs text-gray-400 block mt-0.5">
+                  Applied to new medicines. Most pharma products use 12%.
+                </span>
+              </div>
+              <div className="md:col-span-2 max-w-xs">
+                <select
+                  name="defaultGSTRate"
+                  value={formData.defaultGSTRate}
+                  onChange={handleChange}
+                  className="w-full rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm py-2.5 px-4 outline-none font-semibold bg-white"
+                >
+                  <option value={0}>0% — Exempt</option>
+                  <option value={5}>5% — Life-saving drugs</option>
+                  <option value={12}>12% — Most formulations (Recommended)</option>
+                  <option value={18}>18% — Medical devices</option>
+                  <option value={28}>28% — Luxury / non-essential</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <div className="flex justify-end pt-4 border-t border-gray-150">
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-sm hover:shadow-md active:scale-98 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer gap-2"
+            >
+              {saving ? (
+                <>
+                  <RefreshCw className="h-4.5 w-4.5 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="h-4.5 w-4.5" />
+                  <span>Save GST Settings</span>
                 </>
               )}
             </button>

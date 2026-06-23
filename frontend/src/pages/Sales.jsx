@@ -53,7 +53,8 @@ const Sales = () => {
         quantity: 1,
         unitPrice: medicine.sellingPrice,
         totalPrice: medicine.sellingPrice,
-        stockAvailable: medicine.quantity
+        stockAvailable: medicine.quantity,
+        gstRate: medicine.gstRate || 12
       }]);
       toast.success(`${medicine.name} added to cart`);
     }
@@ -82,6 +83,18 @@ const Sales = () => {
 
   const subtotal = cart.reduce((sum, item) => sum + item.totalPrice, 0);
   const total = subtotal - (discount || 0);
+
+  // GST calculation (prices are GST-inclusive)
+  const gstBreakdown = cart.reduce((acc, item) => {
+    const rate = item.gstRate || 0;
+    const taxable = Math.round((item.totalPrice / (1 + rate / 100)) * 100) / 100;
+    const gst = Math.round((item.totalPrice - taxable) * 100) / 100;
+    acc.taxable += taxable;
+    acc.cgst += Math.round((gst / 2) * 100) / 100;
+    acc.sgst += gst - Math.round((gst / 2) * 100) / 100;
+    acc.totalGst += gst;
+    return acc;
+  }, { taxable: 0, cgst: 0, sgst: 0, totalGst: 0 });
 
   const handleCloseSuccessModal = () => {
     setCart([]);
@@ -285,6 +298,25 @@ const Sales = () => {
                 </div>
               </div>
               
+              <div className="border-t border-gray-100 pt-3 space-y-2">
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>Taxable Amount</span>
+                  <span>₹{gstBreakdown.taxable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>CGST</span>
+                  <span>₹{gstBreakdown.cgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>SGST</span>
+                  <span>₹{gstBreakdown.sgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between text-xs font-semibold text-emerald-600">
+                  <span>Total GST (incl.)</span>
+                  <span>₹{gstBreakdown.totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+
               <div className="border-t border-gray-100 pt-3 flex justify-between items-baseline">
                 <span className="font-bold text-gray-800">Total Payable</span>
                 <span className="text-2xl font-extrabold text-blue-600">

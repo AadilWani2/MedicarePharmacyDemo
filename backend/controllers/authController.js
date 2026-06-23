@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const { generateAccessToken, generateRefreshToken } = require('../middleware/auth');
 const { validationResult } = require('express-validator');
+const { logAudit } = require('../middleware/auditMiddleware');
 
 exports.register = async (req, res) => {
   try {
@@ -29,6 +30,16 @@ exports.register = async (req, res) => {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    await logAudit({
+      action: 'CREATE',
+      entity: 'User',
+      entityId: user._id,
+      entityName: user.name,
+      user: req.user || user,
+      details: `Registered new user: ${user.name} (${user.email}) with role: ${user.role}`,
+      ipAddress: req.ip
     });
 
     res.status(201).json({
@@ -74,6 +85,16 @@ exports.login = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
+    await logAudit({
+      action: 'LOGIN',
+      entity: 'User',
+      entityId: user._id,
+      entityName: user.name,
+      user: user,
+      details: `User logged in: ${user.name} (${user.email})`,
+      ipAddress: req.ip
+    });
+
     res.json({
       success: true,
       accessToken,
@@ -93,6 +114,17 @@ exports.logout = async (req, res) => {
       await req.user.save({ validateBeforeSave: false });
     }
     res.clearCookie('refreshToken');
+
+    await logAudit({
+      action: 'LOGOUT',
+      entity: 'User',
+      entityId: req.user._id,
+      entityName: req.user.name,
+      user: req.user,
+      details: `User logged out: ${req.user.name}`,
+      ipAddress: req.ip
+    });
+
     res.json({ success: true, message: 'Logged out' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Logout failed' });

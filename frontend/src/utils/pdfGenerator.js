@@ -64,6 +64,9 @@ export const generateInvoicePDF = (sale, mode = 'download') => {
 
   doc.text(`Status:  Paid`, 130, 52);
   doc.text(`Billed By: Store Executive`, 130, 58);
+  if (sale.customerGSTIN) {
+    doc.text(`Customer GSTIN: ${sale.customerGSTIN}`, 130, 63);
+  }
 
   // Table Headers
   const tableTop = 78;
@@ -138,20 +141,57 @@ export const generateInvoicePDF = (sale, mode = 'download') => {
     y = 20;
   }
 
-  // Totals calculations block
-  y += 12;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
   doc.setTextColor(71, 85, 105);
   doc.text('Subtotal:', 135, y);
   doc.setTextColor(15, 23, 42);
-  doc.text(`₹${Number(sale.subtotal || 0).toFixed(2)}`, 190, y, { align: 'right' });
+  doc.text(`\u20b9${Number(sale.subtotal || 0).toFixed(2)}`, 190, y, { align: 'right' });
 
   y += 6;
   doc.setTextColor(71, 85, 105);
   doc.text('Discount:', 135, y);
   doc.setTextColor(220, 38, 38); // Red
-  doc.text(`- ₹${Number(sale.discount || 0).toFixed(2)}`, 190, y, { align: 'right' });
+  doc.text(`- \u20b9${Number(sale.discount || 0).toFixed(2)}`, 190, y, { align: 'right' });
+
+  // GST Breakdown
+  if (sale.totalGST > 0) {
+    y += 8;
+    doc.setDrawColor(226, 232, 240);
+    doc.line(130, y - 4, 195, y - 4);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(71, 85, 105);
+    doc.text('GST BREAKDOWN', 135, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+
+    y += 5;
+    doc.setTextColor(71, 85, 105);
+    doc.text('Taxable Amount:', 135, y);
+    doc.setTextColor(15, 23, 42);
+    doc.text(`\u20b9${Number(sale.totalTaxableAmount || 0).toFixed(2)}`, 190, y, { align: 'right' });
+
+    if (!sale.isInterState) {
+      y += 5;
+      doc.setTextColor(71, 85, 105);
+      doc.text('CGST:', 135, y);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`\u20b9${Number(sale.totalCGST || 0).toFixed(2)}`, 190, y, { align: 'right' });
+
+      y += 5;
+      doc.setTextColor(71, 85, 105);
+      doc.text('SGST:', 135, y);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`\u20b9${Number(sale.totalSGST || 0).toFixed(2)}`, 190, y, { align: 'right' });
+    } else {
+      y += 5;
+      doc.setTextColor(71, 85, 105);
+      doc.text('IGST:', 135, y);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`\u20b9${Number(sale.totalIGST || 0).toFixed(2)}`, 190, y, { align: 'right' });
+    }
+  }
 
   y += 8;
   doc.setDrawColor(203, 213, 225); // Slate 300
@@ -161,7 +201,7 @@ export const generateInvoicePDF = (sale, mode = 'download') => {
   doc.setFontSize(11);
   doc.setTextColor(30, 58, 138); // Deep Blue
   doc.text('Total Paid:', 135, y);
-  doc.text(`₹${Number(sale.totalAmount || 0).toFixed(2)}`, 190, y, { align: 'right' });
+  doc.text(`\u20b9${Number(sale.totalAmount || 0).toFixed(2)}`, 190, y, { align: 'right' });
 
   // Footer notes block
   y += 18;

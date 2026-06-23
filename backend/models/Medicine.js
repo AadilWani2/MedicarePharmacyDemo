@@ -57,6 +57,17 @@ const medicineSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // GST Compliance Fields
+  hsnCode: {
+    type: String,
+    default: '30049099',
+    trim: true
+  },
+  gstRate: {
+    type: Number,
+    default: 12,
+    enum: [0, 5, 12, 18, 28]
+  },
   discountApplied: {
     type: Boolean,
     default: false

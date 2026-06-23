@@ -68,6 +68,7 @@ app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/settings', require('./routes/settingsRoutes'));
+app.use('/api/audit', require('./routes/auditRoutes'));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy', pharmacy: 'MediCare Pharmacy' });
@@ -83,28 +84,30 @@ app.use((err, req, res, next) => {
 });
 
 // Database
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log('✅ MongoDB Connected');
-    // Initialize WhatsApp Web Client
-    const { initWhatsApp } = require('./utils/whatsappUtils');
-    initWhatsApp();
-  })
-  .catch(err => {
-    console.error('❌ MongoDB Error:', err);
-    process.exit(1);
-  });
+if (process.env.NODE_ENV !== 'test') {
+  mongoose.connect(process.env.MONGODB_URI)
+    .then(() => {
+      console.log('✅ MongoDB Connected');
+      // Initialize WhatsApp Web Client
+      const { initWhatsApp } = require('./utils/whatsappUtils');
+      initWhatsApp();
+    })
+    .catch(err => {
+      console.error('❌ MongoDB Error:', err);
+      process.exit(1);
+    });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`
-╔══════════════════════════════════════╗
-║   🏥 MediCare Pharmacy System      ║
-║   📍 Srinagar, Jammu & Kashmir     ║
-║   🌐 http://localhost:${PORT}         ║
-╚══════════════════════════════════════╝
-  `);
-});
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`
+  ╔══════════════════════════════════════╗
+  ║   🏥 MediCare Pharmacy System      ║
+  ║   📍 Srinagar, Jammu & Kashmir     ║
+  ║   🌐 http://localhost:${PORT}         ║
+  ╚══════════════════════════════════════╝
+    `);
+  });
+}
 
 const runDailyCheck = async () => {
   try {
@@ -210,6 +213,10 @@ const runDailyCheck = async () => {
   }
 };
 
-// Start background timers
-setTimeout(runDailyCheck, 10000);
-setInterval(runDailyCheck, 24 * 60 * 60 * 1000);
+if (process.env.NODE_ENV !== 'test') {
+  // Start background timers
+  setTimeout(runDailyCheck, 10000);
+  setInterval(runDailyCheck, 24 * 60 * 60 * 1000);
+}
+
+module.exports = app;

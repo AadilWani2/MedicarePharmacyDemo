@@ -368,9 +368,16 @@ const Medicines = () => {
 
                       {/* Batch Number */}
                       <td className="px-6 py-4">
-                        <span className="text-sm font-mono text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                          {medicine.batchNumber}
-                        </span>
+                        <div className="flex flex-col space-y-1">
+                          <span className="text-sm font-mono text-gray-600 bg-gray-100 px-2 py-1 rounded w-fit">
+                            {medicine.batchNumber}
+                          </span>
+                          {medicine.hsnCode && (
+                            <span className="text-[10px] text-gray-400 font-mono">
+                              HSN: {medicine.hsnCode}
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Stock */}
@@ -386,6 +393,9 @@ const Medicines = () => {
                         <div>
                           <p className="text-sm font-semibold text-gray-900">₹{medicine.sellingPrice?.toLocaleString()}</p>
                           <p className="text-xs text-gray-400">Cost: ₹{medicine.purchasePrice?.toLocaleString()}</p>
+                          <span className="inline-block mt-1 px-1.5 py-0.5 text-[10px] bg-green-50 text-green-700 rounded font-medium border border-green-100">
+                            {medicine.gstRate || 0}% GST
+                          </span>
                         </div>
                       </td>
 

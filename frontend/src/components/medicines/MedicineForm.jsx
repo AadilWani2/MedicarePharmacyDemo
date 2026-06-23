@@ -24,7 +24,9 @@ const MedicineForm = ({ medicine, onSave, onCancel }) => {
     dosage: '',
     description: '',
     requiresPrescription: false,
-    storageConditions: ''
+    storageConditions: '',
+    hsnCode: '30049099',
+    gstRate: 12
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -47,7 +49,9 @@ const MedicineForm = ({ medicine, onSave, onCancel }) => {
         dosage: medicine.dosage || '',
         description: medicine.description || '',
         requiresPrescription: medicine.requiresPrescription || false,
-        storageConditions: medicine.storageConditions || ''
+        storageConditions: medicine.storageConditions || '',
+        hsnCode: medicine.hsnCode || '30049099',
+        gstRate: medicine.gstRate !== undefined ? medicine.gstRate : 12
       });
     }
   }, [medicine]);
@@ -132,7 +136,8 @@ const MedicineForm = ({ medicine, onSave, onCancel }) => {
         purchasePrice: Number(formData.purchasePrice),
         sellingPrice: Number(formData.sellingPrice),
         quantity: Number(formData.quantity),
-        reorderLevel: Number(formData.reorderLevel)
+        reorderLevel: Number(formData.reorderLevel),
+        gstRate: Number(formData.gstRate)
       };
 
       if (medicine) {
@@ -415,6 +420,40 @@ const MedicineForm = ({ medicine, onSave, onCancel }) => {
                     <AlertTriangle className="h-3.5 w-3.5 mr-1 flex-shrink-0" /> {errors.expiryDate}
                   </p>
                 )}
+              </div>
+
+              {/* HSN Code */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  HSN/SAC Code
+                </label>
+                <input
+                  type="text"
+                  name="hsnCode"
+                  value={formData.hsnCode}
+                  onChange={handleChange}
+                  className="w-full rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm py-3 px-4 font-mono"
+                  placeholder="e.g., 30049099"
+                />
+              </div>
+
+              {/* GST Rate */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  GST Rate (%)
+                </label>
+                <select
+                  name="gstRate"
+                  value={formData.gstRate}
+                  onChange={handleChange}
+                  className="w-full rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm py-3 px-4 bg-white"
+                >
+                  <option value="0">0% (Exempt)</option>
+                  <option value="5">5% (Life-saving)</option>
+                  <option value="12">12% (Standard Formulations)</option>
+                  <option value="18">18% (Devices/Other)</option>
+                  <option value="28">28% (Luxury/Special)</option>
+                </select>
               </div>
 
             </div>

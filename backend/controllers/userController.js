@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const { logAudit, computeChanges } = require('../middleware/auditMiddleware');
 
 exports.getUsers = async (req, res) => {
   try {
@@ -24,15 +25,31 @@ exports.getUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const { password, ...updateData } = req.body;
+    const oldUser = await User.findById(req.params.id).select('-password -refreshTokens');
+    if (!oldUser) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
     const user = await User.findByIdAndUpdate(
       req.params.id,
       updateData,
       { new: true, runValidators: true }
     ).select('-password -refreshTokens');
     
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+    const changes = computeChanges(oldUser.toObject(), user.toObject(), ['name', 'email', 'role', 'isActive']);
+    if (changes) {
+      await logAudit({
+        action: 'UPDATE',
+        entity: 'User',
+        entityId: user._id,
+        entityName: user.name,
+        user: req.user,
+        changes,
+        details: `Updated user profile for ${user.name}`,
+        ipAddress: req.ip
+      });
     }
+
     res.json({ success: true, user });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -46,8 +63,20 @@ exports.toggleUserStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
     
+    const oldStatus = user.isActive;
     user.isActive = !user.isActive;
     await user.save();
+    
+    await logAudit({
+      action: 'UPDATE',
+      entity: 'User',
+      entityId: user._id,
+      entityName: user.name,
+      user: req.user,
+      changes: { isActive: { from: oldStatus, to: user.isActive } },
+      details: `${user.isActive ? 'Activated' : 'Deactivated'} user ${user.name}`,
+      ipAddress: req.ip
+    });
     
     res.json({ success: true, user: { id: user._id, isActive: user.isActive } });
   } catch (error) {

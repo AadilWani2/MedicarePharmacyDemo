@@ -23,7 +23,13 @@ const purchaseSchema = new mongoose.Schema({
     purchasePrice: { type: Number, required: true },
     sellingPrice: Number,
     expiryDate: Date,
-    totalPrice: Number
+    totalPrice: Number,
+    // GST fields per item
+    hsnCode: { type: String, default: '' },
+    gstRate: { type: Number, default: 0 },
+    cgstAmount: { type: Number, default: 0 },
+    sgstAmount: { type: Number, default: 0 },
+    igstAmount: { type: Number, default: 0 }
   }],
   totalAmount: { type: Number, required: true },
   discount: { type: Number, default: 0 },

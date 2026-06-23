@@ -1,4 +1,5 @@
 const Settings = require('../models/Settings');
+const { logAudit, computeChanges } = require('../middleware/auditMiddleware');
 
 exports.getSettings = async (req, res) => {
   try {
@@ -19,18 +20,45 @@ exports.getSettings = async (req, res) => {
 
 exports.updateSettings = async (req, res) => {
   try {
-    const { lowStockThreshold, expiryWarningDays, emailAlertIntervalHours } = req.body;
+    const { 
+      lowStockThreshold, expiryWarningDays, emailAlertIntervalHours,
+      pharmacyGSTIN, pharmacyState, pharmacyStateName, defaultGSTRate
+    } = req.body;
     
     let settings = await Settings.findOne();
     if (!settings) {
       settings = new Settings();
     }
+
+    const oldData = settings.toObject();
     
     if (lowStockThreshold !== undefined) settings.lowStockThreshold = Number(lowStockThreshold);
     if (expiryWarningDays !== undefined) settings.expiryWarningDays = Number(expiryWarningDays);
     if (emailAlertIntervalHours !== undefined) settings.emailAlertIntervalHours = Number(emailAlertIntervalHours);
+    if (pharmacyGSTIN !== undefined) settings.pharmacyGSTIN = pharmacyGSTIN;
+    if (pharmacyState !== undefined) settings.pharmacyState = pharmacyState;
+    if (pharmacyStateName !== undefined) settings.pharmacyStateName = pharmacyStateName;
+    if (defaultGSTRate !== undefined) settings.defaultGSTRate = Number(defaultGSTRate);
     
     await settings.save();
+
+    const changes = computeChanges(oldData, settings.toObject(), [
+      'lowStockThreshold', 'expiryWarningDays', 'emailAlertIntervalHours',
+      'pharmacyGSTIN', 'pharmacyState', 'pharmacyStateName', 'defaultGSTRate'
+    ]);
+
+    if (changes) {
+      await logAudit({
+        action: 'SETTINGS_CHANGE',
+        entity: 'Settings',
+        entityId: settings._id,
+        entityName: 'System Settings',
+        user: req.user,
+        changes,
+        details: `Updated system settings`,
+        ipAddress: req.ip
+      });
+    }
     
     res.json({ 
       success: true, 

@@ -1,4 +1,5 @@
 const Medicine = require('../models/Medicine');
+const { logAudit, computeChanges } = require('../middleware/auditMiddleware');
 
 // Search/Autocomplete medicines
 exports.searchMedicines = async (req, res) => {
@@ -21,7 +22,7 @@ exports.searchMedicines = async (req, res) => {
         }
       ]
     })
-    .select('name genericName manufacturer category sellingPrice quantity dosage requiresPrescription')
+    .select('name genericName manufacturer category sellingPrice quantity dosage requiresPrescription hsnCode gstRate')
     .limit(Number(limit))
     .sort({ name: 1 });
     
@@ -92,8 +93,22 @@ exports.createMedicine = async (req, res) => {
   try {
     req.body.createdBy = req.user._id;
     const medicine = await Medicine.create(req.body);
+
+    await logAudit({
+      action: 'CREATE',
+      entity: 'Medicine',
+      entityId: medicine._id,
+      entityName: medicine.name,
+      user: req.user,
+      details: `Created medicine: ${medicine.name} (Batch: ${medicine.batchNumber})`,
+      ipAddress: req.ip
+    });
+
     res.status(201).json({ success: true, medicine });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: 'Batch number already exists' });
+    }
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -101,14 +116,38 @@ exports.createMedicine = async (req, res) => {
 // Update medicine
 exports.updateMedicine = async (req, res) => {
   try {
+    const oldMedicine = await Medicine.findById(req.params.id);
+    if (!oldMedicine) {
+      return res.status(404).json({ success: false, message: 'Medicine not found' });
+    }
+    const oldData = oldMedicine.toObject();
+
     const medicine = await Medicine.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true, runValidators: true }
     );
-    if (!medicine) {
-      return res.status(404).json({ success: false, message: 'Medicine not found' });
+
+    const changes = computeChanges(oldData, medicine.toObject(), [
+      'name', 'genericName', 'category', 'manufacturer', 'batchNumber',
+      'purchasePrice', 'sellingPrice', 'quantity', 'reorderLevel',
+      'expiryDate', 'description', 'dosage', 'requiresPrescription',
+      'hsnCode', 'gstRate'
+    ]);
+
+    if (changes) {
+      await logAudit({
+        action: 'UPDATE',
+        entity: 'Medicine',
+        entityId: medicine._id,
+        entityName: medicine.name,
+        user: req.user,
+        changes,
+        details: `Updated medicine: ${medicine.name}`,
+        ipAddress: req.ip
+      });
     }
+
     res.json({ success: true, medicine });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -126,6 +165,17 @@ exports.deleteMedicine = async (req, res) => {
     if (!medicine) {
       return res.status(404).json({ success: false, message: 'Medicine not found' });
     }
+
+    await logAudit({
+      action: 'DELETE',
+      entity: 'Medicine',
+      entityId: medicine._id,
+      entityName: medicine.name,
+      user: req.user,
+      details: `Soft-deleted medicine: ${medicine.name}`,
+      ipAddress: req.ip
+    });
+
     res.json({ success: true, message: 'Medicine deleted' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -186,6 +236,15 @@ exports.applyExpiryDiscount = async (req, res) => {
       await med.save();
       updatedCount++;
     }
+
+    await logAudit({
+      action: 'UPDATE',
+      entity: 'Medicine',
+      entityName: `Bulk Expiry Discount`,
+      user: req.user,
+      details: `Applied ${percentage}% discount to ${updatedCount} medicines expiring within ${days} days`,
+      ipAddress: req.ip
+    });
     
     res.json({
       success: true,
@@ -215,6 +274,15 @@ exports.revertExpiryDiscount = async (req, res) => {
         revertedCount++;
       }
     }
+
+    await logAudit({
+      action: 'UPDATE',
+      entity: 'Medicine',
+      entityName: `Bulk Discount Revert`,
+      user: req.user,
+      details: `Reverted discounts for ${revertedCount} medicines`,
+      ipAddress: req.ip
+    });
     
     res.json({
       success: true,

@@ -19,6 +19,27 @@ const settingsSchema = new mongoose.Schema({
     required: true,
     min: 1
   },
+  // GST Configuration
+  pharmacyGSTIN: {
+    type: String,
+    default: '01ABCDE1234F1Z5',
+    trim: true
+  },
+  pharmacyState: {
+    type: String,
+    default: '01',
+    trim: true
+  },
+  pharmacyStateName: {
+    type: String,
+    default: 'Jammu & Kashmir',
+    trim: true
+  },
+  defaultGSTRate: {
+    type: Number,
+    default: 12,
+    enum: [0, 5, 12, 18, 28]
+  },
   updatedAt: {
     type: Date,
     default: Date.now

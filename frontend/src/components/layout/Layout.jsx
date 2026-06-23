@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { 
   LayoutDashboard, Pill, ShoppingCart, Truck, 
   FileText, Users, Shield, LogOut, Menu, X,
-  Settings as SettingsIcon
+  Settings as SettingsIcon, ScrollText
 } from 'lucide-react';
 import NotificationBell from '../common/NotificationBell';
 
@@ -24,7 +24,10 @@ const Layout = () => {
   ];
 
   const navigation = user?.role === 'admin' 
-    ? [...baseNavigation, { name: 'Settings', href: '/settings', icon: SettingsIcon }]
+    ? [...baseNavigation, 
+        { name: 'Audit Log', href: '/audit', icon: ScrollText },
+        { name: 'Settings', href: '/settings', icon: SettingsIcon }
+      ]
     : baseNavigation;
 
   return (

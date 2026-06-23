@@ -12,6 +12,7 @@ import Suppliers from './pages/Suppliers';
 import Reports from './pages/Reports';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
+import AuditLog from './pages/AuditLog';
 
 function App() {
   return (
@@ -54,6 +55,7 @@ function App() {
             <Route path="suppliers" element={<Suppliers />} />
             <Route path="reports" element={<Reports />} />
             <Route path="users" element={<Users />} />
+            <Route path="audit" element={<AuditLog />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>

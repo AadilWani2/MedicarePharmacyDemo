@@ -1,5 +1,6 @@
 const Purchase = require('../models/Purchase');
 const Medicine = require('../models/Medicine');
+const { logAudit } = require('../middleware/auditMiddleware');
 
 exports.getPurchases = async (req, res) => {
   try {
@@ -51,16 +52,32 @@ exports.createPurchase = async (req, res) => {
     // Generate invoice number
     const invoiceNumber = await Purchase.generateInvoiceNumber();
     
-    // Calculate totals
+    // Calculate totals with GST
     let totalAmount = 0;
-    const purchaseItems = items.map(item => {
+    const purchaseItems = [];
+
+    for (const item of items) {
       const totalPrice = item.quantity * item.purchasePrice;
       totalAmount += totalPrice;
-      return {
+
+      // Look up medicine GST info
+      const medicine = await Medicine.findById(item.medicine);
+      const gstRate = medicine?.gstRate || 0;
+      const taxableAmount = Math.round((totalPrice / (1 + gstRate / 100)) * 100) / 100;
+      const gstAmount = Math.round((totalPrice - taxableAmount) * 100) / 100;
+      const cgstAmount = Math.round((gstAmount / 2) * 100) / 100;
+      const sgstAmount = gstAmount - cgstAmount;
+
+      purchaseItems.push({
         ...item,
-        totalPrice
-      };
-    });
+        totalPrice,
+        hsnCode: medicine?.hsnCode || '',
+        gstRate,
+        cgstAmount,
+        sgstAmount,
+        igstAmount: 0
+      });
+    }
     
     const netAmount = totalAmount - (discount || 0);
     
@@ -83,6 +100,16 @@ exports.createPurchase = async (req, res) => {
         { $inc: { quantity: item.quantity } }
       );
     }
+
+    await logAudit({
+      action: 'CREATE',
+      entity: 'Purchase',
+      entityId: purchase._id,
+      entityName: purchase.invoiceNumber,
+      user: req.user,
+      details: `Purchase ${purchase.invoiceNumber} — ₹${purchase.netAmount} (${purchaseItems.length} items)`,
+      ipAddress: req.ip
+    });
     
     res.status(201).json({ success: true, purchase });
   } catch (error) {

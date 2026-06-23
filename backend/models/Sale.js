@@ -11,6 +11,10 @@ const saleSchema = new mongoose.Schema({
     default: 'Walk-in Customer'
   },
   customerPhone: String,
+  customerGSTIN: {
+    type: String,
+    default: ''
+  },
   items: [{
     medicine: {
       type: mongoose.Schema.Types.ObjectId,
@@ -21,11 +25,25 @@ const saleSchema = new mongoose.Schema({
     quantity: { type: Number, required: true, min: 1 },
     unitPrice: { type: Number, required: true },
     discount: { type: Number, default: 0 },
-    totalPrice: Number
+    totalPrice: Number,
+    // GST fields per item
+    hsnCode: { type: String, default: '' },
+    gstRate: { type: Number, default: 0 },
+    taxableAmount: { type: Number, default: 0 },
+    cgstAmount: { type: Number, default: 0 },
+    sgstAmount: { type: Number, default: 0 },
+    igstAmount: { type: Number, default: 0 }
   }],
   subtotal: { type: Number, required: true },
   discount: { type: Number, default: 0 },
   totalAmount: { type: Number, required: true },
+  // GST totals
+  isInterState: { type: Boolean, default: false },
+  totalTaxableAmount: { type: Number, default: 0 },
+  totalCGST: { type: Number, default: 0 },
+  totalSGST: { type: Number, default: 0 },
+  totalIGST: { type: Number, default: 0 },
+  totalGST: { type: Number, default: 0 },
   paymentMethod: {
     type: String,
     enum: ['cash', 'card', 'upi', 'credit'],

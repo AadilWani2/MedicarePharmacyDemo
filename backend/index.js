@@ -108,9 +108,6 @@ if (process.env.NODE_ENV !== 'test') {
   mongoose.connect(process.env.MONGODB_URI)
     .then(() => {
       console.log('✅ MongoDB Connected');
-      // Initialize WhatsApp Web Client
-      const { initWhatsApp } = require('./utils/whatsappUtils');
-      initWhatsApp();
     })
     .catch(err => {
       console.error('❌ MongoDB Error:', err);
@@ -205,29 +202,7 @@ const runDailyCheck = async () => {
       csvContent
     })
     .then(() => console.log('✉️ Daily Email check dispatched successfully.'))
-    .catch(emailError => console.error('❌ Daily Email check dispatch failed:', emailError.message));
-
-    // 2. Send WhatsApp alert (concurrently)
-    try {
-      const { sendWhatsAppAlert } = require('./utils/whatsappUtils');
-      const totalLow = lowStockMedicines.length;
-      const totalExp = expiringMedicines.length;
-      
-      let text = `🚨 *MediCare Pharmacy Inventory Alert* 🚨\n\n`;
-      if (totalLow > 0) text += `• *Low Stock Items:* ${totalLow} items are below safety thresholds.\n`;
-      if (totalExp > 0) text += `• *Expiring Items:* ${totalExp} items are expiring soon.\n`;
-      text += `\nPlease review the attached CSV report file.`;
-
-      sendWhatsAppAlert({
-        text,
-        csvContent,
-        csvFilename: `Inventory_Alert_${new Date().toISOString().split('T')[0]}.csv`
-      })
-      .then(() => console.log('📱 Daily WhatsApp check dispatched successfully.'))
-      .catch(whatsappError => console.error('❌ Daily WhatsApp check dispatch failed:', whatsappError.message));
-    } catch (whatsappError) {
-      console.error('❌ Daily WhatsApp check dispatch setup failed:', whatsappError.message);
-    }
+     .catch(emailError => console.error('❌ Daily Email check dispatch failed:', emailError.message));
   } catch (error) {
     console.error('❌ Daily Alert Check failed:', error.message);
   }

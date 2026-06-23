@@ -40,21 +40,7 @@ const settingsSchema = new mongoose.Schema({
     default: 12,
     enum: [0, 5, 12, 18, 28]
   },
-  // WhatsApp Configuration
-  whatsappEnabled: {
-    type: Boolean,
-    default: false
-  },
-  whatsappRecipient: {
-    type: String,
-    default: '',
-    trim: true
-  },
-  whatsappApiKey: {
-    type: String,
-    default: '',
-    trim: true
-  },
+
   updatedAt: {
     type: Date,
     default: Date.now

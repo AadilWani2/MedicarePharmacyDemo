@@ -36,26 +36,11 @@ const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [whatsappConnected, setWhatsappConnected] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchDashboardData();
-    if (user?.role === 'admin') {
-      checkWhatsAppStatus();
-    }
   }, [user]);
-
-  const checkWhatsAppStatus = async () => {
-    try {
-      const { data } = await api.get('/settings/whatsapp/status-check');
-      if (data && data.success) {
-        setWhatsappConnected(data.status === 'ready');
-      }
-    } catch (err) {
-      console.error('Error checking WhatsApp status:', err);
-    }
-  };
 
   const fetchDashboardData = async () => {
     try {
@@ -102,26 +87,6 @@ const Dashboard = () => {
         <p className="text-gray-600 mt-1">Welcome to MediCare Pharmacy, Srinagar</p>
       </div>
 
-      {/* WhatsApp Status Banner */}
-      {user?.role === 'admin' && !whatsappConnected && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between shadow-sm animate-fadeIn">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
-              <MessageSquare className="h-5 w-5 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-amber-800">WhatsApp Alerts Disabled</p>
-              <p className="text-xs text-amber-600 font-medium">Enable WhatsApp alerts to receive instant notifications for low stock and daily summaries directly on your phone.</p>
-            </div>
-          </div>
-          <button
-            onClick={() => navigate('/settings')}
-            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg shadow transition-all cursor-pointer border-none font-semibold"
-          >
-            Configure Alerts
-          </button>
-        </div>
-      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

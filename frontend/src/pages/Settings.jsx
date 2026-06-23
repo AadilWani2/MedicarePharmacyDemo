@@ -14,14 +14,10 @@ const Settings = () => {
     pharmacyGSTIN: '01ABCDE1234F1Z5',
     pharmacyState: '01',
     pharmacyStateName: 'Jammu & Kashmir',
-    defaultGSTRate: 12,
-    whatsappEnabled: false,
-    whatsappRecipient: '',
-    whatsappApiKey: ''
+    defaultGSTRate: 12
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [testingAlert, setTestingAlert] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -39,10 +35,7 @@ const Settings = () => {
           pharmacyGSTIN: data.settings.pharmacyGSTIN || '01ABCDE1234F1Z5',
           pharmacyState: data.settings.pharmacyState || '01',
           pharmacyStateName: data.settings.pharmacyStateName || 'Jammu & Kashmir',
-          defaultGSTRate: data.settings.defaultGSTRate ?? 12,
-          whatsappEnabled: data.settings.whatsappEnabled ?? false,
-          whatsappRecipient: data.settings.whatsappRecipient || '',
-          whatsappApiKey: data.settings.whatsappApiKey || ''
+          defaultGSTRate: data.settings.defaultGSTRate ?? 12
         });
       }
     } catch (error) {
@@ -74,32 +67,6 @@ const Settings = () => {
       toast.error(error.response?.data?.message || 'Failed to save settings. Check connection.');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleSendTestAlert = async () => {
-    if (!formData.whatsappRecipient || !formData.whatsappApiKey) {
-      toast.error('Please enter a WhatsApp phone number and CallMeBot API key first.');
-      return;
-    }
-    try {
-      setTestingAlert(true);
-      const loadingToast = toast.loading('Sending test WhatsApp message...');
-      const { data } = await api.post('/settings/whatsapp/test', {
-        whatsappRecipient: formData.whatsappRecipient,
-        whatsappApiKey: formData.whatsappApiKey
-      });
-      toast.dismiss(loadingToast);
-      if (data.success) {
-        toast.success(data.message || 'Test alert sent successfully!');
-      } else {
-        toast.error(data.message || 'Failed to send test alert');
-      }
-    } catch (err) {
-      toast.dismiss();
-      toast.error(err.response?.data?.message || 'Error sending test WhatsApp alert');
-    } finally {
-      setTestingAlert(false);
     }
   };
 
@@ -344,124 +311,6 @@ const Settings = () => {
             </div>
           </form>
 
-          {/* WhatsApp Alerts Integration */}
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-150 p-6 space-y-6">
-            <h3 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-3 flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-green-600" />
-              WhatsApp Alerts Integration
-            </h3>
-
-            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-emerald-850 text-xs space-y-2">
-              <p className="font-bold flex items-center gap-1.5 text-emerald-900">
-                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                CallMeBot Lightweight WhatsApp Gateway (Free & Zero-RAM)
-              </p>
-              <p>
-                To set up instant WhatsApp alerts for low stock and daily summaries without bloating server resources, follow these simple steps:
-              </p>
-              <ol className="list-decimal list-inside space-y-1.5 font-medium ml-1">
-                <li>Add the CallMeBot contact <strong>+34 694 23 67 31</strong> to your phone's contact list.</li>
-                <li>Send a WhatsApp message saying: <code className="bg-white px-1.5 py-0.5 rounded border border-emerald-200 font-mono select-all">I allow callmebot to send me messages</code> to that contact.</li>
-                <li>Wait for the bot to reply with your unique <strong>API Key</strong>.</li>
-                <li>Enter your phone number (with country code, e.g., <strong>919876543210</strong>) and the API Key below.</li>
-              </ol>
-            </div>
-
-            <div className="space-y-6">
-              {/* Enable WhatsApp Alerts Checkbox */}
-              <div className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  id="whatsappEnabled"
-                  name="whatsappEnabled"
-                  checked={formData.whatsappEnabled}
-                  onChange={handleChange}
-                  className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
-                />
-                <div>
-                  <label htmlFor="whatsappEnabled" className="text-sm font-bold text-gray-700 block">
-                    Enable WhatsApp Notifications
-                  </label>
-                  <span className="text-xs text-gray-400 block mt-0.5">
-                    Check this to route system stock updates and daily summaries to WhatsApp.
-                  </span>
-                </div>
-              </div>
-
-              {/* Recipient Phone Number */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                <div>
-                  <label className="text-sm font-bold text-gray-700">Recipient Phone Number</label>
-                  <span className="text-xs text-gray-400 block mt-0.5">
-                    Include country code (e.g. 91 for India, no spaces or + symbol).
-                  </span>
-                </div>
-                <div className="md:col-span-2 max-w-xs">
-                  <input
-                    type="text"
-                    name="whatsappRecipient"
-                    value={formData.whatsappRecipient}
-                    onChange={handleChange}
-                    placeholder="e.g. 919876543210"
-                    required={formData.whatsappEnabled}
-                    className="w-full rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm py-2.5 px-4 outline-none font-semibold"
-                  />
-                </div>
-              </div>
-
-              {/* CallMeBot API Key */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                <div>
-                  <label className="text-sm font-bold text-gray-700">CallMeBot API Key</label>
-                  <span className="text-xs text-gray-400 block mt-0.5">
-                    The API key provided to you by the CallMeBot bot.
-                  </span>
-                </div>
-                <div className="md:col-span-2 max-w-xs">
-                  <input
-                    type="text"
-                    name="whatsappApiKey"
-                    value={formData.whatsappApiKey}
-                    onChange={handleChange}
-                    placeholder="e.g. 123456"
-                    required={formData.whatsappEnabled}
-                    className="w-full rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm py-2.5 px-4 outline-none font-semibold"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Buttons */}
-            <div className="flex justify-between items-center pt-4 border-t border-gray-150">
-              <button
-                type="button"
-                onClick={handleSendTestAlert}
-                disabled={testingAlert || !formData.whatsappRecipient || !formData.whatsappApiKey}
-                className="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold text-xs border border-gray-200 shadow-sm hover:shadow active:scale-98 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed gap-1.5"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${testingAlert ? 'animate-spin' : ''}`} />
-                <span>Send Test Alert</span>
-              </button>
-
-              <button
-                type="submit"
-                disabled={saving}
-                className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-sm hover:shadow-md active:scale-98 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer gap-2"
-              >
-                {saving ? (
-                  <>
-                    <RefreshCw className="h-4.5 w-4.5 animate-spin" />
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4.5 w-4.5" />
-                    <span>Save WhatsApp Settings</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
         </>
       )}
     </div>

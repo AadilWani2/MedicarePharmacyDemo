@@ -180,29 +180,7 @@ exports.triggerEmailAlerts = async (req, res) => {
       csvContent
     })
     .then(() => console.log('✉️ Manual Email alert dispatched successfully.'))
-    .catch(emailError => console.error('❌ Manual Email alert dispatch failed:', emailError.message));
-
-    // 2. Send WhatsApp alert (concurrently)
-    try {
-      const { sendWhatsAppAlert } = require('../utils/whatsappUtils');
-      const totalLow = lowStockMedicines.length;
-      const totalExp = expiringMedicines.length;
-      
-      let text = `🚨 *MediCare Pharmacy Manual Inventory Alert* 🚨\n\n`;
-      if (totalLow > 0) text += `• *Low Stock Items:* ${totalLow} items are below safety thresholds.\n`;
-      if (totalExp > 0) text += `• *Expiring Items:* ${totalExp} items are expiring soon.\n`;
-      text += `\nPlease review the attached CSV report file.`;
-
-      sendWhatsAppAlert({
-        text,
-        csvContent,
-        csvFilename: `Inventory_Alert_${new Date().toISOString().split('T')[0]}.csv`
-      })
-      .then(() => console.log('📱 Manual WhatsApp alert dispatched successfully.'))
-      .catch(whatsappError => console.error('❌ Manual WhatsApp alert dispatch failed:', whatsappError.message));
-    } catch (whatsappError) {
-      console.error('❌ Manual WhatsApp alert dispatch setup failed:', whatsappError.message);
-    }
+     .catch(emailError => console.error('❌ Manual Email alert dispatch failed:', emailError.message));
 
     res.json({
       success: true,

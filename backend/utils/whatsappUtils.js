@@ -1,6 +1,4 @@
-const { Client, RemoteAuth, MessageMedia } = require('whatsapp-web.js');
-const { MongoStore } = require('wwebjs-mongo');
-const mongoose = require('mongoose');
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const path = require('path');
 const fs = require('fs');
@@ -130,15 +128,11 @@ const initWhatsApp = () => {
   });
 
   try {
-    const store = new MongoStore({ mongoose: mongoose });
-
-    console.log('📦 Using MongoDB RemoteAuth to persist WhatsApp session...');
+    console.log('💾 Using LocalAuth to persist WhatsApp session...');
     client = new Client({
-      authStrategy: new RemoteAuth({
+      authStrategy: new LocalAuth({
         clientId: 'medicare-pharmacy-session',
-        dataPath: path.join(__dirname, '../.wwebjs_auth'),
-        store: store,
-        backupSyncIntervalMs: 60000
+        dataPath: path.join(__dirname, '../.wwebjs_auth')
       }),
       puppeteer: {
         headless: true,
@@ -152,6 +146,7 @@ const initWhatsApp = () => {
           '--no-zygote',
           '--disable-gpu',
           '--single-process', // Critical for saving memory on Linux (Render)
+          '--disable-features=site-per-process', // Prevent Chrome process overhead
           '--disable-extensions',
           '--disable-default-apps',
           '--disable-software-rasterizer',
@@ -159,10 +154,6 @@ const initWhatsApp = () => {
           '--js-flags="--max-old-space-size=150"' // Restrict V8 heap size inside Chrome
         ]
       }
-    });
-
-    client.on('remote_session_saved', () => {
-      console.log('💾 WhatsApp session successfully saved to MongoDB remote store!');
     });
 
     client.on('qr', (qr) => {

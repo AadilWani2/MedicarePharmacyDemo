@@ -36,131 +36,26 @@ const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [whatsappStatus, setWhatsappStatus] = useState({ status: 'disconnected', qr: null });
-  const [showQRModal, setShowQRModal] = useState(false);
+  const [whatsappConnected, setWhatsappConnected] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
-
-  useEffect(() => {
-    if (user?.role !== 'admin') return;
-
-    const token = localStorage.getItem('accessToken');
-    if (!token) return;
-
-    let eventSource = null;
-    let pollInterval = null;
-    let isPolling = false;
-    let sseTimeout = null;
-    let receivedMessage = false;
-
-    const startPolling = () => {
-      if (isPolling) return;
-      isPolling = true;
-      console.log('[WhatsApp status] Falling back to polling status...');
-      
-      // Poll immediately once
-      fetchStatusJSON();
-
-      pollInterval = setInterval(fetchStatusJSON, 4000);
-    };
-
-    const fetchStatusJSON = async () => {
-      try {
-        const { data } = await api.get('/settings/whatsapp/status-check');
-        if (data && data.success) {
-          setWhatsappStatus({ status: data.status, qr: data.qr });
-          
-          // Auto-show modal if status is 'qr' and not dismissed in this session
-          if (data.status === 'qr' && data.qr && !sessionStorage.getItem('whatsapp_qr_dismissed')) {
-            setShowQRModal(true);
-          }
-          // Auto-show modal when authenticated (user scanned the QR, show them progress)
-          if (data.status === 'authenticated') {
-            setShowQRModal(true);
-          }
-        }
-      } catch (err) {
-        console.error('[WhatsApp status] Error polling status:', err);
-      }
-    };
-
-    try {
-      const url = `${API_BASE_URL}/settings/whatsapp/status?token=${token}`;
-      eventSource = new EventSource(url);
-
-      // Set a 3-second timeout to check if SSE is working/unbuffered
-      sseTimeout = setTimeout(() => {
-        if (!receivedMessage) {
-          console.warn('[WhatsApp SSE] No initial message received within 3s (likely buffered/blocked by proxy). Falling back to HTTP polling.');
-          if (eventSource) {
-            eventSource.close();
-            eventSource = null;
-          }
-          startPolling();
-        }
-      }, 3000);
-
-      eventSource.onmessage = (event) => {
-        receivedMessage = true;
-        if (sseTimeout) {
-          clearTimeout(sseTimeout);
-          sseTimeout = null;
-        }
-        try {
-          const data = JSON.parse(event.data);
-          console.log('[WhatsApp SSE] Status update:', data.status);
-          setWhatsappStatus(data);
-          
-          // Auto-show modal if status is 'qr' and not dismissed in this session
-          if (data.status === 'qr' && data.qr && !sessionStorage.getItem('whatsapp_qr_dismissed')) {
-            setShowQRModal(true);
-          }
-          // Auto-show modal when authenticated (user scanned the QR, show them progress)
-          if (data.status === 'authenticated') {
-            setShowQRModal(true);
-          }
-        } catch (e) {
-          console.error('Failed to parse WhatsApp status:', e);
-        }
-      };
-
-      eventSource.onerror = () => {
-        console.warn('[WhatsApp SSE] EventSource encountered error. Falling back to HTTP polling.');
-        if (eventSource) {
-          eventSource.close();
-          eventSource = null;
-        }
-        startPolling();
-      };
-    } catch (err) {
-      console.error('[WhatsApp SSE] Failed to initialize EventSource:', err);
-      startPolling();
+    if (user?.role === 'admin') {
+      checkWhatsAppStatus();
     }
-
-    return () => {
-      if (eventSource) {
-        eventSource.close();
-      }
-      if (pollInterval) {
-        clearInterval(pollInterval);
-      }
-      if (sseTimeout) {
-        clearTimeout(sseTimeout);
-      }
-    };
   }, [user]);
 
-  useEffect(() => {
-    if (showQRModal && whatsappStatus.status === 'ready') {
-      const timer = setTimeout(() => {
-        setShowQRModal(false);
-      }, 2500);
-      return () => clearTimeout(timer);
+  const checkWhatsAppStatus = async () => {
+    try {
+      const { data } = await api.get('/settings/whatsapp/status-check');
+      if (data && data.success) {
+        setWhatsappConnected(data.status === 'ready');
+      }
+    } catch (err) {
+      console.error('Error checking WhatsApp status:', err);
     }
-  }, [showQRModal, whatsappStatus.status]);
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -207,42 +102,24 @@ const Dashboard = () => {
         <p className="text-gray-600 mt-1">Welcome to MediCare Pharmacy, Srinagar</p>
       </div>
 
-      {/* WhatsApp Status Banners */}
-      {user?.role === 'admin' && whatsappStatus.status === 'qr' && !showQRModal && (
+      {/* WhatsApp Status Banner */}
+      {user?.role === 'admin' && !whatsappConnected && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between shadow-sm animate-fadeIn">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
               <MessageSquare className="h-5 w-5 text-amber-600" />
             </div>
             <div>
-              <p className="text-sm font-bold text-amber-800">WhatsApp Alerts Not Connected</p>
-              <p className="text-xs text-amber-600 font-medium">Scan the QR code to link your phone and enable instant low-stock and expiry notifications.</p>
+              <p className="text-sm font-bold text-amber-800">WhatsApp Alerts Disabled</p>
+              <p className="text-xs text-amber-600 font-medium">Enable WhatsApp alerts to receive instant notifications for low stock and daily summaries directly on your phone.</p>
             </div>
           </div>
           <button
-            onClick={() => setShowQRModal(true)}
-            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg shadow transition-all cursor-pointer border-none"
+            onClick={() => navigate('/settings')}
+            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg shadow transition-all cursor-pointer border-none font-semibold"
           >
-            Connect Now
+            Configure Alerts
           </button>
-        </div>
-      )}
-
-      {user?.role === 'admin' && (whatsappStatus.status === 'connecting' || whatsappStatus.status === 'authenticated') && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3 shadow-sm animate-fadeIn">
-          <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
-            <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
-          </div>
-          <div>
-            <p className="text-sm font-bold text-blue-800">
-              {whatsappStatus.status === 'authenticated' ? 'WhatsApp Authenticated — Finalizing...' : 'Connecting WhatsApp Client...'}
-            </p>
-            <p className="text-xs text-blue-600 font-medium">
-              {whatsappStatus.status === 'authenticated' 
-                ? 'QR code was scanned successfully. The session is being saved — this may take up to a minute.' 
-                : 'The server is booting up Puppeteer to host your alerts session. Please wait.'}
-            </p>
-          </div>
         </div>
       )}
 
@@ -446,94 +323,6 @@ const Dashboard = () => {
           )}
         </div>
       </div>
-
-      {/* WhatsApp QR Modal Overlay */}
-      {showQRModal && (whatsappStatus.status === 'qr' || whatsappStatus.status === 'authenticated' || whatsappStatus.status === 'ready') && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-sm w-full p-6 relative space-y-5">
-            {whatsappStatus.status === 'qr' && (
-              <button 
-                onClick={() => {
-                  setShowQRModal(false);
-                  sessionStorage.setItem('whatsapp_qr_dismissed', 'true');
-                }}
-                className="absolute right-4 top-4 text-gray-400 hover:text-gray-700 hover:bg-gray-100 p-1.5 rounded-lg transition-colors cursor-pointer"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            )}
-
-            {whatsappStatus.status === 'ready' ? (
-              <div className="text-center py-6 space-y-4">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600 animate-bounce">
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-green-800">Connected Successfully!</h3>
-                <p className="text-xs text-green-600 max-w-xs mx-auto leading-relaxed font-medium">
-                  Your WhatsApp has been successfully linked. System alerts are now streaming.
-                </p>
-              </div>
-            ) : whatsappStatus.status === 'authenticated' ? (
-              <div className="text-center py-6 space-y-4">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                  <div className="animate-spin rounded-full h-8 w-8 border-[3px] border-blue-600 border-t-transparent"></div>
-                </div>
-                <h3 className="text-xl font-bold text-blue-800">Authenticated!</h3>
-                <p className="text-xs text-blue-600 max-w-xs mx-auto leading-relaxed font-medium">
-                  QR scanned successfully. Setting up your WhatsApp session... This may take up to a minute.
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="text-center space-y-2">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-2xl text-green-600 mb-2">
-                    <MessageSquare className="h-6 w-6" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900">Link WhatsApp Alerts</h3>
-                  <p className="text-xs text-gray-500 max-w-sm mx-auto leading-relaxed font-medium">
-                    Scan this QR code using your WhatsApp app to enable instant low-stock reports, daily expiry alerts, and compliance updates.
-                  </p>
-                </div>
-
-                <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                  {whatsappStatus.qr ? (
-                    <>
-                      <img 
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(whatsappStatus.qr)}`} 
-                        alt="WhatsApp QR Code" 
-                        className="border border-slate-200 rounded-xl p-1 bg-white shadow-md"
-                      />
-                      <p className="text-[10px] font-bold text-slate-500 mt-3 animate-pulse">Waiting for scan...</p>
-                    </>
-                  ) : (
-                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent my-4"></div>
-                  )}
-                </div>
-
-                <div className="text-center space-y-3">
-                  <div className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
-                    WhatsApp &gt; Linked Devices &gt; Link a Device
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setShowQRModal(false);
-                        sessionStorage.setItem('whatsapp_qr_dismissed', 'true');
-                      }}
-                      className="flex-1 py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-650 rounded-xl text-xs font-bold transition-all cursor-pointer bg-white"
-                    >
-                      Skip for Now
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

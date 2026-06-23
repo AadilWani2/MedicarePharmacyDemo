@@ -11,5 +11,6 @@ router.get('/whatsapp/status', authorize('admin'), settingsController.getWhatsAp
 router.get('/whatsapp/status-check', authorize('admin'), settingsController.getWhatsAppStatusJSON);
 router.post('/whatsapp/disconnect', authorize('admin'), settingsController.disconnectWhatsApp);
 router.post('/whatsapp/connect', authorize('admin'), settingsController.connectWhatsApp);
+router.post('/whatsapp/test', authorize('admin'), settingsController.sendTestWhatsApp);
 
 module.exports = router;

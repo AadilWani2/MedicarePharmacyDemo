@@ -22,7 +22,8 @@ exports.updateSettings = async (req, res) => {
   try {
     const { 
       lowStockThreshold, expiryWarningDays, emailAlertIntervalHours,
-      pharmacyGSTIN, pharmacyState, pharmacyStateName, defaultGSTRate
+      pharmacyGSTIN, pharmacyState, pharmacyStateName, defaultGSTRate,
+      whatsappEnabled, whatsappRecipient, whatsappApiKey
     } = req.body;
     
     let settings = await Settings.findOne();
@@ -40,11 +41,19 @@ exports.updateSettings = async (req, res) => {
     if (pharmacyStateName !== undefined) settings.pharmacyStateName = pharmacyStateName;
     if (defaultGSTRate !== undefined) settings.defaultGSTRate = Number(defaultGSTRate);
     
+    if (whatsappEnabled !== undefined) settings.whatsappEnabled = Boolean(whatsappEnabled);
+    if (whatsappRecipient !== undefined) settings.whatsappRecipient = whatsappRecipient;
+    if (whatsappApiKey !== undefined) settings.whatsappApiKey = whatsappApiKey;
+    
     await settings.save();
+
+    // Sync WhatsApp status in memory after database update
+    await whatsappUtils.syncStatusFromDB();
 
     const changes = computeChanges(oldData, settings.toObject(), [
       'lowStockThreshold', 'expiryWarningDays', 'emailAlertIntervalHours',
-      'pharmacyGSTIN', 'pharmacyState', 'pharmacyStateName', 'defaultGSTRate'
+      'pharmacyGSTIN', 'pharmacyState', 'pharmacyStateName', 'defaultGSTRate',
+      'whatsappEnabled', 'whatsappRecipient', 'whatsappApiKey'
     ]);
 
     if (changes) {
@@ -103,6 +112,47 @@ exports.getWhatsAppStatusJSON = (req, res) => {
     res.json({ success: true, status, qr });
   } catch (error) {
     console.error('❌ Error in getWhatsAppStatusJSON:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.sendTestWhatsApp = async (req, res) => {
+  try {
+    const { whatsappRecipient, whatsappApiKey } = req.body;
+    
+    let recipient = whatsappRecipient || '';
+    let apiKey = whatsappApiKey || '';
+    
+    if (!recipient || !apiKey) {
+      const settings = await Settings.findOne();
+      if (settings) {
+        if (!recipient) recipient = settings.whatsappRecipient;
+        if (!apiKey) apiKey = settings.whatsappApiKey;
+      }
+    }
+    
+    if (!recipient || !apiKey) {
+      return res.status(400).json({ success: false, message: 'Recipient phone number and API key are required to send a test alert.' });
+    }
+    
+    recipient = recipient.replace(/[^0-9]/g, '');
+    if (recipient.length === 10) {
+      recipient = '91' + recipient;
+    }
+    
+    const text = 'Hello! This is a test message from Medicare Pharmacy alert system. Your WhatsApp configuration is working perfectly! 🚀';
+    const url = `https://api.callmebot.com/whatsapp.php?phone=${recipient}&text=${encodeURIComponent(text)}&apikey=${apiKey.trim()}`;
+    
+    console.log(`📡 Sending manual test CallMeBot alert to ${recipient}...`);
+    const response = await fetch(url);
+    if (response.ok) {
+      res.json({ success: true, message: 'Test message sent successfully! Please check your WhatsApp.' });
+    } else {
+      const responseText = await response.text();
+      res.status(500).json({ success: false, message: `CallMeBot failed to send message: ${responseText}` });
+    }
+  } catch (error) {
+    console.error('❌ Error in sendTestWhatsApp:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

@@ -1,17 +1,11 @@
-const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
 const path = require('path');
 const fs = require('fs');
-const { execSync } = require('child_process');
 
-let client = null;
-let isReady = false;
 let connectionStatus = 'disconnected';
-let qrText = null;
 let sseClients = [];
 
 const broadcastWhatsAppStatus = () => {
-  const data = JSON.stringify({ status: connectionStatus, qr: qrText });
+  const data = JSON.stringify({ status: connectionStatus, qr: null });
   sseClients.forEach(c => {
     try {
       c.res.write(`data: ${data}\n\n`);
@@ -30,7 +24,7 @@ const registerStatusClient = (req, res) => {
   res.flushHeaders();
 
   // Send current state immediately
-  const initialData = JSON.stringify({ status: connectionStatus, qr: qrText });
+  const initialData = JSON.stringify({ status: connectionStatus, qr: null });
   res.write(`data: ${initialData}\n\n`);
 
   const clientId = Date.now();
@@ -42,277 +36,88 @@ const registerStatusClient = (req, res) => {
   });
 };
 
-const killOrphanedChromes = () => {
-  if (process.platform !== 'win32') return;
+const syncStatusFromDB = async () => {
   try {
-    console.log('🧹 Scanning for orphaned Puppeteer Chrome processes...');
-    // Finds and kills any chrome.exe process that has wwebjs_auth in its command-line arguments safely without $_ variable
-    const cmd = 'powershell -Command "Get-Process -Id (Get-CimInstance Win32_Process -Filter \'Name = \'\'chrome.exe\'\'\' | Where-Object CommandLine -like \'*wwebjs_auth*\' | ForEach-Object ProcessId) -ErrorAction SilentlyContinue | Stop-Process -Force"';
-    execSync(cmd, { stdio: 'ignore' });
-    console.log('🧹 Cleaned up orphaned Puppeteer processes.');
-  } catch (e) {
-    // Ignore errors (e.g. if no processes found)
+    const Settings = require('../models/Settings');
+    const settings = await Settings.findOne();
+    if (settings && settings.whatsappEnabled && settings.whatsappRecipient && settings.whatsappApiKey) {
+      connectionStatus = 'ready';
+    } else {
+      connectionStatus = 'disconnected';
+    }
+  } catch (err) {
+    console.error('❌ Error syncing WhatsApp status from DB:', err.message);
+    connectionStatus = 'disconnected';
   }
 };
 
-const initWhatsApp = () => {
-  if (process.env.WHATSAPP_ALERTS_ENABLED !== 'true') {
-    console.log('🔌 WhatsApp Alerts are disabled in .env. Skipping initialization.');
-    connectionStatus = 'disconnected';
-    broadcastWhatsAppStatus();
-    return;
-  }
-
-  connectionStatus = 'connecting';
-  qrText = null;
-  broadcastWhatsAppStatus();
-
-  // Kill orphaned processes first to release any folder locks
-  killOrphanedChromes();
-
-  // Wait 1.5 seconds to let the OS fully release file handles
-  try {
-    execSync('powershell -Command "Start-Sleep -m 1500"', { stdio: 'ignore' });
-  } catch (e) {
-    // Ignore error
-  }
-
-  console.log('🔄 Initializing WhatsApp client...');
-  
-  // Find system Chrome/Edge to avoid Puppeteer download issues
-  const getExecutablePath = () => {
-    const paths = [
-      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-      'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-      'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
-      '/usr/bin/chromium-browser',
-      '/usr/bin/chromium',
-      '/usr/bin/google-chrome',
-      '/usr/bin/google-chrome-stable',
-      '/usr/bin/google-chrome-unstable'
-    ];
-    for (const p of paths) {
-      if (fs.existsSync(p)) {
-        return p;
-      }
-    }
-    return undefined;
-  };
-
-  const executablePath = getExecutablePath();
-  if (executablePath) {
-    console.log(`🔎 Found system browser to launch Puppeteer: ${executablePath}`);
-  }
-
-  // Clear any stale browser locks (very common on nodemon restarts)
-  const sessionDirs = [
-    path.join(__dirname, '../.wwebjs_auth/session-medicare-pharmacy-session'),
-    path.join(__dirname, '../.wwebjs_auth/RemoteAuth-medicare-pharmacy-session')
-  ];
-  const lockFiles = [];
-  sessionDirs.forEach(dir => {
-    lockFiles.push(path.join(dir, 'lockfile'));
-    lockFiles.push(path.join(dir, 'SingletonLock'));
-  });
-
-  lockFiles.forEach(file => {
-    try {
-      if (fs.existsSync(file)) {
-        console.log(`🧹 Removing stale Puppeteer lock file: ${path.basename(file)}`);
-        fs.unlinkSync(file);
-      }
-    } catch (e) {
-      console.log(`⚠️ Puppeteer lock file cleanup skipped for ${path.basename(file)}:`, e.message);
-    }
-  });
-
-  try {
-    console.log('💾 Using LocalAuth to persist WhatsApp session...');
-    client = new Client({
-      authStrategy: new LocalAuth({
-        clientId: 'medicare-pharmacy-session',
-        dataPath: path.join(__dirname, '../.wwebjs_auth')
-      }),
-      puppeteer: {
-        headless: true,
-        executablePath: executablePath,
-        args: [
-          '--no-sandbox', 
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--disable-gpu',
-          '--single-process', // Critical for saving memory on Linux (Render)
-          '--disable-features=site-per-process', // Prevent Chrome process overhead
-          '--disable-extensions',
-          '--disable-default-apps',
-          '--disable-software-rasterizer',
-          '--disable-gl-drawing',
-          '--js-flags="--max-old-space-size=150"' // Restrict V8 heap size inside Chrome
-        ]
-      }
-    });
-
-    client.on('qr', (qr) => {
-      console.log('\n📲 Scan the QR code below with your WhatsApp app (Linked Devices) to log in:');
-      qrcode.generate(qr, { small: true });
-      connectionStatus = 'qr';
-      qrText = qr;
-      broadcastWhatsAppStatus();
-    });
-
-    client.on('authenticated', () => {
-      console.log('\n🔐 WhatsApp QR scanned & authenticated! Waiting for client to be ready...');
-      connectionStatus = 'authenticated';
-      qrText = null;
-      broadcastWhatsAppStatus();
-    });
-
-    client.on('ready', () => {
-      console.log('\n✅ WhatsApp client is ready and connected!');
-      isReady = true;
-      connectionStatus = 'ready';
-      qrText = null;
-      broadcastWhatsAppStatus();
-    });
-
-    client.on('auth_failure', (msg) => {
-      console.error('\n❌ WhatsApp Authentication failure:', msg);
-      isReady = false;
-      connectionStatus = 'disconnected';
-      qrText = null;
-      broadcastWhatsAppStatus();
-    });
-
-    client.on('disconnected', (reason) => {
-      console.log('\n🔌 WhatsApp client disconnected:', reason);
-      isReady = false;
-      connectionStatus = 'disconnected';
-      qrText = null;
-      broadcastWhatsAppStatus();
-      
-      // Auto-restart client on disconnection
-      console.log('🔄 Attempting to re-initialize WhatsApp client...');
-      setTimeout(() => {
-        try {
-          if (client) {
-            connectionStatus = 'connecting';
-            broadcastWhatsAppStatus();
-            client.initialize();
-          }
-        } catch (e) {
-          console.error('❌ Failed to re-initialize WhatsApp:', e.message);
-          connectionStatus = 'disconnected';
-          broadcastWhatsAppStatus();
-        }
-      }, 10000);
-    });
-
-    client.initialize();
-  } catch (error) {
-    console.error('❌ WhatsApp initialization failed:', error.message);
-    connectionStatus = 'disconnected';
-    broadcastWhatsAppStatus();
-  }
+const initWhatsApp = async () => {
+  console.log('🔄 Initializing CallMeBot WhatsApp Alerts Gateway...');
+  await syncStatusFromDB();
+  console.log(`📱 WhatsApp status synchronized: ${connectionStatus}`);
 };
 
 const sendWhatsAppAlert = async ({ text, csvContent, csvFilename }) => {
-  if (process.env.WHATSAPP_ALERTS_ENABLED !== 'true') {
-    return;
-  }
-
-  if (!client || !isReady) {
-    console.log('⚠️ WhatsApp client is not initialized or not ready. Check QR connection.');
-    return;
-  }
-
-  const recipient = process.env.WHATSAPP_RECIPIENT;
-  if (!recipient) {
-    console.log('⚠️ WHATSAPP_RECIPIENT is not configured in .env. Skipping WhatsApp alert.');
-    return;
-  }
-
   try {
-    // Format recipient phone number: e.g. 919876543210 (must have country code, no + sign)
-    let formattedPhone = recipient.replace(/[^0-9]/g, '');
-    // If it's a 10-digit number (typical for Indian numbers), auto-prepend 91
-    if (formattedPhone.length === 10) {
-      formattedPhone = '91' + formattedPhone;
-    }
-
-    let chatId = `${formattedPhone}@c.us`;
-    try {
-      const numberId = await client.getNumberId(formattedPhone);
-      if (numberId) {
-        chatId = numberId._serialized;
-      } else {
-        console.warn(`⚠️ The phone number ${recipient} was not found by WhatsApp lookup. Attempting to send to default ID ${chatId}...`);
-      }
-    } catch (err) {
-      console.warn(`⚠️ WhatsApp number lookup failed for ${recipient}: ${err.message}. Falling back to default ID ${chatId}...`);
-    }
+    const Settings = require('../models/Settings');
+    const settings = await Settings.findOne();
     
-    // Send text alert
-    await client.sendMessage(chatId, text);
-    console.log(`📱 WhatsApp text alert sent to ${recipient} (chat ID: ${chatId})`);
+    if (!settings || !settings.whatsappEnabled || !settings.whatsappRecipient || !settings.whatsappApiKey) {
+      console.log('⚠️ WhatsApp Alerts are disabled or not configured in settings. Skipping.');
+      return;
+    }
 
-    // Send CSV attachment if available
-    if (csvContent && csvFilename) {
-      const base64Content = Buffer.from(csvContent).toString('base64');
-      const media = new MessageMedia(
-        'text/csv',
-        base64Content,
-        csvFilename
-      );
-      await client.sendMessage(chatId, media);
-      console.log(`📎 WhatsApp CSV report attachment sent to ${recipient}`);
+    let recipient = settings.whatsappRecipient.replace(/[^0-9]/g, '');
+    // If it's a 10-digit Indian number, auto-prepend 91
+    if (recipient.length === 10) {
+      recipient = '91' + recipient;
+    }
+
+    const apiKey = settings.whatsappApiKey.trim();
+
+    // Prepare text content
+    let fullText = text;
+    if (csvContent) {
+      const lines = csvContent.split('\n').filter(line => line.trim());
+      const summaryLines = lines.slice(1, 10); // Grab up to 9 rows
+      if (summaryLines.length > 0) {
+        fullText += '\n\nAlert Details:\n' + summaryLines.map(l => l.replace(/,/g, ' | ')).join('\n');
+        if (lines.length > 10) {
+          fullText += `\n...and ${lines.length - 10} more items.`;
+        }
+      }
+    }
+
+    // CallMeBot API URL
+    const url = `https://api.callmebot.com/whatsapp.php?phone=${recipient}&text=${encodeURIComponent(fullText)}&apikey=${apiKey}`;
+
+    console.log(`📡 Sending CallMeBot WhatsApp alert to ${recipient}...`);
+    const response = await fetch(url);
+    if (response.ok) {
+      console.log(`✅ WhatsApp alert successfully sent to ${recipient} via CallMeBot!`);
+    } else {
+      const responseText = await response.text();
+      console.error(`❌ CallMeBot failed to send message: Status ${response.status} - ${responseText}`);
     }
   } catch (error) {
-    console.error('❌ Error sending WhatsApp alert:', error.message);
+    console.error('❌ Error sending WhatsApp alert via CallMeBot:', error.message);
   }
 };
 
 const disconnectClient = async () => {
-  if (!client) return true;
   try {
-    connectionStatus = 'connecting';
-    broadcastWhatsAppStatus();
+    const Settings = require('../models/Settings');
+    let settings = await Settings.findOne();
+    if (!settings) settings = new Settings();
+    settings.whatsappEnabled = false;
+    await settings.save();
     
-    try {
-      await client.logout();
-    } catch (err) {
-      console.log('WhatsApp client logout warning:', err.message);
-    }
-    
-    try {
-      await client.destroy();
-    } catch (err) {
-      console.log('WhatsApp client destroy warning:', err.message);
-    }
-    
-    client = null;
-    isReady = false;
     connectionStatus = 'disconnected';
-    qrText = null;
     broadcastWhatsAppStatus();
-    
-    // Delete session directory
-    const sessionDir = path.join(__dirname, '../.wwebjs_auth/session-medicare-pharmacy-session');
-    if (fs.existsSync(sessionDir)) {
-      try {
-        fs.rmSync(sessionDir, { recursive: true, force: true });
-        console.log('🧹 Deleted WhatsApp session directory for clean logout.');
-      } catch (rmErr) {
-        console.warn('⚠️ Could not remove session directory:', rmErr.message);
-      }
-    }
-    
+    console.log('🔌 WhatsApp Alerts disabled successfully.');
     return true;
   } catch (e) {
-    console.error('Error disconnecting WhatsApp:', e.message);
+    console.error('❌ Error disabling WhatsApp:', e.message);
     connectionStatus = 'disconnected';
     broadcastWhatsAppStatus();
     return false;
@@ -320,20 +125,34 @@ const disconnectClient = async () => {
 };
 
 const connectClient = async () => {
-  if (client && (connectionStatus === 'ready' || connectionStatus === 'connecting' || connectionStatus === 'qr')) {
+  try {
+    const Settings = require('../models/Settings');
+    let settings = await Settings.findOne();
+    if (!settings || !settings.whatsappRecipient || !settings.whatsappApiKey) {
+      console.log('⚠️ Cannot enable WhatsApp: recipient phone or API key is not configured.');
+      return false;
+    }
+    
+    settings.whatsappEnabled = true;
+    await settings.save();
+    
+    connectionStatus = 'ready';
+    broadcastWhatsAppStatus();
+    console.log('🔌 WhatsApp Alerts enabled successfully.');
+    return true;
+  } catch (e) {
+    console.error('❌ Error enabling WhatsApp:', e.message);
     return false;
   }
-  initWhatsApp();
-  return true;
 };
 
 module.exports = {
   initWhatsApp,
   sendWhatsAppAlert,
-  isWhatsAppReady: () => isReady,
+  isWhatsAppReady: () => connectionStatus === 'ready',
   registerStatusClient,
   disconnectClient,
   connectClient,
-  getStatus: () => ({ status: connectionStatus, qr: qrText })
+  getStatus: () => ({ status: connectionStatus, qr: null }),
+  syncStatusFromDB
 };
-// Trigger restart

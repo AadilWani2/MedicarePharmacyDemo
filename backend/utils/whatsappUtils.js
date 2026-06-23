@@ -150,7 +150,13 @@ const initWhatsApp = () => {
           '--disable-accelerated-2d-canvas',
           '--no-first-run',
           '--no-zygote',
-          '--disable-gpu'
+          '--disable-gpu',
+          '--single-process', // Critical for saving memory on Linux (Render)
+          '--disable-extensions',
+          '--disable-default-apps',
+          '--disable-software-rasterizer',
+          '--disable-gl-drawing',
+          '--js-flags="--max-old-space-size=150"' // Restrict V8 heap size inside Chrome
         ]
       }
     });

@@ -96,3 +96,13 @@ exports.connectWhatsApp = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.getWhatsAppStatusJSON = (req, res) => {
+  try {
+    const { status, qr } = whatsappUtils.getStatus();
+    res.json({ success: true, status, qr });
+  } catch (error) {
+    console.error('❌ Error in getWhatsAppStatusJSON:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

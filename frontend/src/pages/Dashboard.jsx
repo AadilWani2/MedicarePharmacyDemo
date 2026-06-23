@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { dashboardService, API_BASE_URL } from '../services/api';
+import api, { dashboardService, API_BASE_URL } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -50,34 +50,84 @@ const Dashboard = () => {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
 
-    const url = `${API_BASE_URL}/settings/whatsapp/status?token=${token}`;
-    const eventSource = new EventSource(url);
+    let eventSource = null;
+    let pollInterval = null;
+    let isPolling = false;
 
-    eventSource.onmessage = (event) => {
+    const startPolling = () => {
+      if (isPolling) return;
+      isPolling = true;
+      console.log('[WhatsApp status] Falling back to polling status...');
+      
+      // Poll immediately once
+      fetchStatusJSON();
+
+      pollInterval = setInterval(fetchStatusJSON, 4000);
+    };
+
+    const fetchStatusJSON = async () => {
       try {
-        const data = JSON.parse(event.data);
-        console.log('[WhatsApp SSE] Status update:', data.status);
-        setWhatsappStatus(data);
-        
-        // Auto-show modal if status is 'qr' and not dismissed in this session
-        if (data.status === 'qr' && data.qr && !sessionStorage.getItem('whatsapp_qr_dismissed')) {
-          setShowQRModal(true);
+        const { data } = await api.get('/settings/whatsapp/status-check');
+        if (data && data.success) {
+          setWhatsappStatus({ status: data.status, qr: data.qr });
+          
+          // Auto-show modal if status is 'qr' and not dismissed in this session
+          if (data.status === 'qr' && data.qr && !sessionStorage.getItem('whatsapp_qr_dismissed')) {
+            setShowQRModal(true);
+          }
+          // Auto-show modal when authenticated (user scanned the QR, show them progress)
+          if (data.status === 'authenticated') {
+            setShowQRModal(true);
+          }
         }
-        // Auto-show modal when authenticated (user scanned the QR, show them progress)
-        if (data.status === 'authenticated') {
-          setShowQRModal(true);
-        }
-      } catch (e) {
-        console.error('Failed to parse WhatsApp status:', e);
+      } catch (err) {
+        console.error('[WhatsApp status] Error polling status:', err);
       }
     };
 
-    eventSource.onerror = () => {
-      // Reconnects automatically
-    };
+    try {
+      const url = `${API_BASE_URL}/settings/whatsapp/status?token=${token}`;
+      eventSource = new EventSource(url);
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('[WhatsApp SSE] Status update:', data.status);
+          setWhatsappStatus(data);
+          
+          // Auto-show modal if status is 'qr' and not dismissed in this session
+          if (data.status === 'qr' && data.qr && !sessionStorage.getItem('whatsapp_qr_dismissed')) {
+            setShowQRModal(true);
+          }
+          // Auto-show modal when authenticated (user scanned the QR, show them progress)
+          if (data.status === 'authenticated') {
+            setShowQRModal(true);
+          }
+        } catch (e) {
+          console.error('Failed to parse WhatsApp status:', e);
+        }
+      };
+
+      eventSource.onerror = () => {
+        console.warn('[WhatsApp SSE] EventSource encountered error. Falling back to HTTP polling.');
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
+        }
+        startPolling();
+      };
+    } catch (err) {
+      console.error('[WhatsApp SSE] Failed to initialize EventSource:', err);
+      startPolling();
+    }
 
     return () => {
-      eventSource.close();
+      if (eventSource) {
+        eventSource.close();
+      }
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
     };
   }, [user]);
 

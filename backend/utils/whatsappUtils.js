@@ -336,6 +336,7 @@ module.exports = {
   isWhatsAppReady: () => isReady,
   registerStatusClient,
   disconnectClient,
-  connectClient
+  connectClient,
+  getStatus: () => ({ status: connectionStatus, qr: qrText })
 };
 // Trigger restart

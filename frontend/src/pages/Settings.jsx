@@ -28,25 +28,66 @@ const Settings = () => {
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
- 
-    const url = `${API_BASE_URL}/settings/whatsapp/status?token=${token}`;
-    const eventSource = new EventSource(url);
 
-    eventSource.onmessage = (event) => {
+    let eventSource = null;
+    let pollInterval = null;
+    let isPolling = false;
+
+    const startPolling = () => {
+      if (isPolling) return;
+      isPolling = true;
+      console.log('[WhatsApp status] Falling back to polling status...');
+      
+      // Poll immediately once
+      fetchStatusJSON();
+
+      pollInterval = setInterval(fetchStatusJSON, 4000);
+    };
+
+    const fetchStatusJSON = async () => {
       try {
-        const data = JSON.parse(event.data);
-        setWhatsappStatus(data);
-      } catch (e) {
-        console.error('Failed to parse WhatsApp status:', e);
+        const { data } = await api.get('/settings/whatsapp/status-check');
+        if (data && data.success) {
+          setWhatsappStatus({ status: data.status, qr: data.qr });
+        }
+      } catch (err) {
+        console.error('[WhatsApp status] Error polling status:', err);
       }
     };
 
-    eventSource.onerror = () => {
-      // Reconnects automatically
-    };
+    try {
+      const url = `${API_BASE_URL}/settings/whatsapp/status?token=${token}`;
+      eventSource = new EventSource(url);
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          setWhatsappStatus(data);
+        } catch (e) {
+          console.error('Failed to parse WhatsApp status:', e);
+        }
+      };
+
+      eventSource.onerror = () => {
+        console.warn('[WhatsApp SSE] EventSource encountered error. Falling back to HTTP polling.');
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
+        }
+        startPolling();
+      };
+    } catch (err) {
+      console.error('[WhatsApp SSE] Failed to initialize EventSource:', err);
+      startPolling();
+    }
 
     return () => {
-      eventSource.close();
+      if (eventSource) {
+        eventSource.close();
+      }
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
     };
   }, []);
 

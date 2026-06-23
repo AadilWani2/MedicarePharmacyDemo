@@ -360,7 +360,7 @@ const Settings = () => {
                 To set up instant WhatsApp alerts for low stock and daily summaries without bloating server resources, follow these simple steps:
               </p>
               <ol className="list-decimal list-inside space-y-1.5 font-medium ml-1">
-                <li>Add the CallMeBot contact <strong>+34 621 07 31 40</strong> to your phone's contact list.</li>
+                <li>Add the CallMeBot contact <strong>+34 694 23 67 31</strong> to your phone's contact list.</li>
                 <li>Send a WhatsApp message saying: <code className="bg-white px-1.5 py-0.5 rounded border border-emerald-200 font-mono select-all">I allow callmebot to send me messages</code> to that contact.</li>
                 <li>Wait for the bot to reply with your unique <strong>API Key</strong>.</li>
                 <li>Enter your phone number (with country code, e.g., <strong>919876543210</strong>) and the API Key below.</li>

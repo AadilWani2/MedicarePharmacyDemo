@@ -8,15 +8,23 @@ const sendAlertEmail = async ({ lowStockItems, expiringItems, csvContent }) => {
     throw new Error('SMTP credentials are not fully configured in your .env file. Please check SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, and ALERT_RECIPIENT.');
   }
 
-  const transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: parseInt(SMTP_PORT, 10),
-    secure: parseInt(SMTP_PORT, 10) === 465,
+  const transportConfig = {
     auth: {
       user: SMTP_USER,
       pass: SMTP_PASS
     }
-  });
+  };
+
+  // Use built-in 'gmail' service config for gmail.com hosts for robust TLS handshake
+  if (SMTP_HOST && SMTP_HOST.includes('gmail.com')) {
+    transportConfig.service = 'gmail';
+  } else {
+    transportConfig.host = SMTP_HOST;
+    transportConfig.port = parseInt(SMTP_PORT, 10);
+    transportConfig.secure = parseInt(SMTP_PORT, 10) === 465;
+  }
+
+  const transporter = nodemailer.createTransport(transportConfig);
 
   let lowStockRows = '';
   if (lowStockItems && lowStockItems.length > 0) {

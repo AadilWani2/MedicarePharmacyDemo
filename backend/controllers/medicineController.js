@@ -157,14 +157,19 @@ exports.updateMedicine = async (req, res) => {
 // Delete medicine (soft delete)
 exports.deleteMedicine = async (req, res) => {
   try {
-    const medicine = await Medicine.findByIdAndUpdate(
-      req.params.id,
-      { isActive: false },
-      { new: true }
-    );
+    const medicine = await Medicine.findById(req.params.id);
     if (!medicine) {
       return res.status(404).json({ success: false, message: 'Medicine not found' });
     }
+
+    const oldBatchNumber = medicine.batchNumber;
+    
+    // Check if it already has the deleted suffix to avoid duplicate appending
+    if (!oldBatchNumber.includes('-deleted-')) {
+      medicine.batchNumber = `${oldBatchNumber}-deleted-${Date.now()}`;
+    }
+    medicine.isActive = false;
+    await medicine.save();
 
     await logAudit({
       action: 'DELETE',
@@ -172,7 +177,7 @@ exports.deleteMedicine = async (req, res) => {
       entityId: medicine._id,
       entityName: medicine.name,
       user: req.user,
-      details: `Soft-deleted medicine: ${medicine.name}`,
+      details: `Soft-deleted medicine: ${medicine.name} (Batch: ${oldBatchNumber} freed)`,
       ipAddress: req.ip
     });
 
